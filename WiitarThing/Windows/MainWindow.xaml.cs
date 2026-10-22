@@ -211,6 +211,10 @@ namespace WiitarThing
                             connectSeq.Add(new KeyValuePair<int, DeviceControl>(deviceList[deviceList.Count - 1].properties.autoNum, deviceList[deviceList.Count - 1]));
                         }
                     }
+                    else
+                    {
+                        stream.Dispose();
+                    }
                 }
             }
 

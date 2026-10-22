@@ -66,14 +66,27 @@ namespace NintrollerLib
 
         private int Initialize(string path, FileShare sharingMode)
         {
-            int result;
             m_path = path;
             m_sharingMode = sharingMode;
-            if (!OpenDevice(path, out var m_handle, sharingMode))
+            if (!OpenDevice(path, out m_handle, sharingMode))
             {
                 return Marshal.GetLastWin32Error();
             }
 
+            int result = ReadCapabilities(path);
+            if (result != (int)Win32Error.Success)
+            {
+                // Don't leave the device open; in exclusive mode that would block every later attempt
+                m_handle.Close();
+                m_handle = null;
+            }
+
+            return result;
+        }
+
+        private int ReadCapabilities(string path)
+        {
+            int result;
             if (!HidD_GetPreparsedData(m_handle, out var hidData))
             {
                 result = Marshal.GetLastWin32Error();
@@ -81,21 +94,24 @@ namespace NintrollerLib
                 return result;
             }
 
-            if (hidData == null || hidData.IsInvalid)
+            using (hidData)
             {
-                Debug.WriteLine($"Preparsed data handle is invalid for {path}");
-                return (int)Win32Error.InvalidHandle;
-            }
+                if (hidData == null || hidData.IsInvalid)
+                {
+                    Debug.WriteLine($"Preparsed data handle is invalid for {path}");
+                    return (int)Win32Error.InvalidHandle;
+                }
 
-            result = HidP_GetCaps(hidData, out var caps);
-            if (result < 0) // HRESULT, not Win32 error
-            {
-                Debug.WriteLine($"Could not get HID capabilities for {path}: {new Win32Exception(result).Message} ({result})");
-                return result;
-            }
+                result = HidP_GetCaps(hidData, out var caps);
+                if (result < 0) // HRESULT, not Win32 error
+                {
+                    Debug.WriteLine($"Could not get HID capabilities for {path}: {new Win32Exception(result).Message} ({result})");
+                    return result;
+                }
 
-            InputLength = caps.InputReportByteLength;
-            OutputLength = caps.OutputReportByteLength;
+                InputLength = caps.InputReportByteLength;
+                OutputLength = caps.OutputReportByteLength;
+            }
 
             m_readBuffer = new byte[InputLength];
             m_writeBuffer = new byte[OutputLength];
