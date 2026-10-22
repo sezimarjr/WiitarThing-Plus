@@ -37,6 +37,8 @@ namespace WiitarThing
         private int   rumbleStepCount   = 0;
         private int   rumbleStepPeriod  = 10;
         private float rumbleSlowMult    = 0.5f;
+        private volatile bool rumbleRequested = false;
+        private int   rumbleWriteQueued = 0;
         
         // internally public members
         internal Holders.Holder holder;
@@ -692,7 +694,7 @@ namespace WiitarThing
             // disable rumble for turntables
             if (!properties.useRumble || device.Type == ControllerType.Turntable)
             {
-                if (currentRumbleState) device.RumbleEnabled = false;
+                if (currentRumbleState) RequestRumble(false);
                 return;
             }
 
@@ -714,11 +716,11 @@ namespace WiitarThing
 
             if (rumbleStepCount < stopStep)
             {
-                if (!currentRumbleState) device.RumbleEnabled = true;
+                if (!currentRumbleState) RequestRumble(true);
             }
             else
             {
-                if (currentRumbleState) device.RumbleEnabled = false;
+                if (currentRumbleState) RequestRumble(false);
             }
 
             rumbleStepCount += 1;
@@ -726,6 +728,38 @@ namespace WiitarThing
             if (rumbleStepCount >= rumbleStepPeriod)
             {
                 rumbleStepCount = 0;
+            }
+        }
+
+        // Changing rumble is a Bluetooth write that can take several milliseconds. RumbleStep runs on the
+        // input thread, so the write is handed to the thread pool instead of holding up the next report.
+        // Requests made while a write is in flight are merged into one follow-up write of the latest state.
+        private void RequestRumble(bool enabled)
+        {
+            rumbleRequested = enabled;
+            if (Interlocked.Exchange(ref rumbleWriteQueued, 1) == 0)
+            {
+                ThreadPool.QueueUserWorkItem(ApplyRumble);
+            }
+        }
+
+        private void ApplyRumble(object state)
+        {
+            while (true)
+            {
+                bool wanted = rumbleRequested;
+                if (!identifying && device.RumbleEnabled != wanted)
+                {
+                    device.RumbleEnabled = wanted;
+                }
+
+                Interlocked.Exchange(ref rumbleWriteQueued, 0);
+
+                // Pick up a request that came in while writing (it saw the flag set and didn't queue itself)
+                if (rumbleRequested == wanted || Interlocked.Exchange(ref rumbleWriteQueued, 1) != 0)
+                {
+                    return;
+                }
             }
         }
 
