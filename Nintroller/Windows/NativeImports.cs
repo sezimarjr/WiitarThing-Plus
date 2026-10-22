@@ -13,6 +13,7 @@ namespace NintrollerLib
         {
             Success = 0,
             InvalidHandle = 6,
+            OperationAborted = 995,
             IoPending = 997,
         }
 
@@ -83,13 +84,16 @@ namespace NintrollerLib
             [MarshalAs(UnmanagedType.U4)] EFileAttributes flags,
             IntPtr template);
 
+        // Overlapped I/O keeps using the buffer and OVERLAPPED after the call returns,
+        // so both are passed as unmanaged memory the GC can't move or free
         [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public extern static bool ReadFile(
             SafeFileHandle hFile,
-            byte[] lpBuffer,
+            IntPtr lpBuffer,
             uint nNumberofBytesToRead,
-            out uint lpNumberOfBytesRead,
-            ref NativeOverlapped lpOverlapped);
+            IntPtr lpNumberOfBytesRead,
+            IntPtr lpOverlapped);
 
         /// <summary>
         /// Use to fix sending data to TR controllers
@@ -99,10 +103,10 @@ namespace NintrollerLib
         [return: MarshalAs(UnmanagedType.Bool)]
         public extern static bool WriteFile(
             SafeFileHandle hFile,            // HANDLE
-            byte[] lpBuffer,                 // LPCVOID
+            IntPtr lpBuffer,                 // LPCVOID
             uint nNumberOfBytesToWrite,      // DWORD
-            out uint lpNumberOfBytesWritten, // LPDWORD
-            ref NativeOverlapped lpOverlapped);
+            IntPtr lpNumberOfBytesWritten,   // LPDWORD
+            IntPtr lpOverlapped);            // LPOVERLAPPED
 
 
         /// <summary>
@@ -131,18 +135,18 @@ namespace NintrollerLib
         [return: MarshalAs(UnmanagedType.Bool)]
         public extern static bool GetOverlappedResult(
             SafeFileHandle hFile,                // HANDLE
-            in NativeOverlapped lpOverlapped,    // LPOVERLAPPED
+            IntPtr lpOverlapped,                 // LPOVERLAPPED
             out uint lpNumberOfBytesTransferred, // LPDWORD
             bool bWait);                         // BOOL
 
         /// <summary>
-        /// Gets the results of an overlapped operation
+        /// Cancels a pending overlapped operation
         /// </summary>
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public extern static bool CancelIoEx(
             SafeFileHandle hFile,                // HANDLE
-            in NativeOverlapped lpOverlapped);   // LPOVERLAPPED
+            IntPtr lpOverlapped);                // LPOVERLAPPED
 
         #endregion
 

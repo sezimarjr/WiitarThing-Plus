@@ -45,6 +45,7 @@ namespace NintrollerLib
         // Read/Writing Variables
         private HidDeviceStream  _stream;                    // Read and Write Stream
         private bool             _reading    = false;        // true if actively reading
+        private CancellationTokenSource _readSession;        // cancelled to stop the current read thread
         private readonly object  _readingObj = new object(); // for locking/blocking
         private readonly object  _writingObj = new object(); // for locking/blocking
         
@@ -405,12 +406,25 @@ namespace NintrollerLib
         public void BeginReading()
         {
             _connected = true;
-            
+
             // kickoff the reading process if it hasn't started already
             if (!_reading && _stream != null && _stream.Open())
             {
                 _reading = true;
-                var thread = new Thread(ReadThread);
+
+                // The first status report of a new session is the one that discovers the extension
+                // (StopReading leaves this as Unknown, which made a reconnect ignore that report)
+                _statusType = StatusType.DiscoverExtension;
+
+                // Each session has its own token, so a thread from a previous session that is still
+                // winding down can't keep reading alongside this one
+                var session = new CancellationTokenSource();
+                _readSession = session;
+                var thread = new Thread(() => ReadThread(session.Token))
+                {
+                    IsBackground = true,
+                    Name = "Nintroller read"
+                };
                 thread.Start();
             }
         }
@@ -448,30 +462,29 @@ namespace NintrollerLib
         }
 
         // Performs background reading
-        private async void ReadThread()
+        private void ReadThread(CancellationToken session)
         {
             int reportLength = _stream.InputLength;
             byte[] readBuffer = new byte[reportLength];
-            var cancel = new CancellationTokenSource();
-            while (_reading)
+            while (!session.IsCancellationRequested)
             {
                 if (_stream == null || !_stream.CanRead)
                     break;
 
                 try
                 {
-                    var readTask = _stream.ReadAsync(readBuffer, 0, readBuffer.Length, cancel.Token);
-                    if (!readTask.Wait(3000))
+                    // Read directly on this thread rather than hopping through the thread pool for every report
+                    int bytesRead = _stream.Read(readBuffer, 0, readBuffer.Length, 3000, session);
+                    if (session.IsCancellationRequested)
+                        break;
+
+                    if (bytesRead == HidDeviceStream.ReadTimedOut)
                     {
-                        // Cancel read and get status to make sure the wiimote is still connected
+                        // Get status to make sure the wiimote is still connected
                         Log("Read timed out, are we still connected?");
-                        cancel.Cancel();
-                        cancel.Dispose();
-                        cancel = new CancellationTokenSource();
                         GetStatus();
                         continue;
                     }
-                    int bytesRead = await readTask;
                     if (bytesRead < 1)
                     {
                         Log("No data read!");
@@ -481,13 +494,19 @@ namespace NintrollerLib
                 }
                 catch (Exception e)
                 {
+                    if (session.IsCancellationRequested)
+                        break;
+
                     Log("Error reading: " + e.ToString());
                     GetStatus();
                     continue;
                 }
             }
-            cancel.Dispose();
-            StopReading();
+
+            // If the session was cancelled, StopReading already ran; calling it again here could
+            // tear down a session that was started in the meantime
+            if (!session.IsCancellationRequested)
+                StopReading();
         }
 
         // Request data from the device's memory
@@ -1605,6 +1624,7 @@ namespace NintrollerLib
         public void StopReading()
         {
             _reading = false;
+            _readSession?.Cancel();
             _connected = false;
             _ackType = AcknowledgementType.NA;
             _statusType = StatusType.Unknown;

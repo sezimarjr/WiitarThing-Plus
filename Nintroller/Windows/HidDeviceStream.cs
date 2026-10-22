@@ -20,6 +20,24 @@ namespace NintrollerLib
         private byte[] m_readBuffer;
         private byte[] m_writeBuffer;
 
+        // One event per direction, reused for every report instead of creating a kernel event each time
+        private readonly object m_readLock = new object();
+        private readonly object m_writeLock = new object();
+        private readonly ManualResetEvent m_readEvent = new ManualResetEvent(false);
+        private readonly ManualResetEvent m_writeEvent = new ManualResetEvent(false);
+
+        /// <summary>
+        /// Returned by <see cref="Read(byte[], int, int, int, CancellationToken)"/> when no report arrived in time.
+        /// </summary>
+        public const int ReadTimedOut = -1;
+
+        private enum TransferStatus
+        {
+            Completed,
+            TimedOut,
+            Cancelled
+        }
+
         public override bool CanRead => InputLength > 0;
         public override bool CanWrite => OutputLength > 0;
         public override bool CanSeek => false;
@@ -155,70 +173,57 @@ namespace NintrollerLib
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return ReadInternal(buffer, offset, count, CancellationToken.None);
+            return ReadInternal(buffer, offset, count, Timeout.Infinite, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Reads a report on the calling thread. Returns <see cref="ReadTimedOut"/> if nothing arrived
+        /// within <paramref name="timeout"/> milliseconds, or 0 if <paramref name="token"/> was cancelled.
+        /// </summary>
+        public int Read(byte[] buffer, int offset, int count, int timeout, CancellationToken token)
+        {
+            return ReadInternal(buffer, offset, count, timeout, token);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
             return Task.Run(() => {
-                return ReadInternal(buffer, offset, count, token);
+                return ReadInternal(buffer, offset, count, Timeout.Infinite, token);
             });
         }
 
-        private int ReadInternal(byte[] buffer, int offset, int count, CancellationToken token)
+        private int ReadInternal(byte[] buffer, int offset, int count, int timeout, CancellationToken token)
         {
             VerifyArguments(buffer, offset, count);
             if (buffer.Length < 1 || count < 1)
                 return 0;
 
-            var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-            var overlapped = new NativeOverlapped
+            lock (m_readLock)
             {
-                EventHandle = waitHandle.SafeWaitHandle.DangerousGetHandle()
-            };
-
-            bool success;
-            uint bytesRead;
-            int result;
-            if (UseHidD)
-            {
-                success = HidD_GetInputReport(m_handle, m_readBuffer, (uint)m_readBuffer.Length);
-                bytesRead = (uint)InputLength;
-            }
-            else
-            {
-                success = ReadFile(m_handle, m_readBuffer, (uint)m_readBuffer.Length, out bytesRead, ref overlapped);
-            }
-
-            result = Marshal.GetLastWin32Error();
-            if (result == (int)Win32Error.IoPending)
-            {
-                if (token.CanBeCanceled)
+                uint bytesRead;
+                if (UseHidD)
                 {
-                    WaitHandle.WaitAny(new[] { waitHandle, token.WaitHandle }, Timeout.Infinite, false);
-                    if (token.IsCancellationRequested)
+                    if (!HidD_GetInputReport(m_handle, m_readBuffer, (uint)m_readBuffer.Length))
                     {
-                        CancelIoEx(m_handle, overlapped);
-                        return 0;
+                        ThrowLastError();
                     }
+
+                    bytesRead = (uint)InputLength;
+                }
+                else
+                {
+                    var status = TransferOverlapped(true, m_readBuffer, m_readEvent, timeout, token, out bytesRead);
+                    if (status == TransferStatus.TimedOut)
+                        return ReadTimedOut;
+                    if (status == TransferStatus.Cancelled)
+                        return 0;
                 }
 
-                success = GetOverlappedResult(m_handle, in overlapped, out bytesRead, true);
-                result = Marshal.GetLastWin32Error();
+                Debug.WriteLine($"Read: {BitConverter.ToString(m_readBuffer)}");
+
+                Array.Copy(m_readBuffer, 0, buffer, offset, Math.Min(m_readBuffer.Length, buffer.Length - offset));
+                return (int)bytesRead;
             }
-
-            if (!success && result != (int)Win32Error.Success)
-            {
-                throw new Win32Exception(result);
-            }
-
-            Debug.WriteLineIf(!success, "Result was failure but GetLastWin32Error returned success");
-            Debug.WriteLineIf(result != (int)Win32Error.Success, $"Result was success but GetLastWin32Error returned {result} (\"{new Win32Exception(result).Message}\")");
-
-            Debug.WriteLine($"Read: {BitConverter.ToString(m_readBuffer)}");
-
-            Array.Copy(m_readBuffer, 0, buffer, offset, Math.Min(m_readBuffer.Length, buffer.Length - offset));
-            return (int)bytesRead;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -239,55 +244,102 @@ namespace NintrollerLib
             if (buffer.Length < 1 || count < 1)
                 return;
 
-            Array.Copy(buffer, offset, m_writeBuffer, 0, Math.Min(m_writeBuffer.Length, buffer.Length - offset));
-            for (int i = buffer.Length - offset; i < m_writeBuffer.Length; i++)
+            lock (m_writeLock)
             {
-                m_writeBuffer[i] = 0;
-            }
-
-            Debug.WriteLine($"Writing: {BitConverter.ToString(m_writeBuffer)}");
-
-            var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-            var overlapped = new NativeOverlapped
-            {
-                EventHandle = waitHandle.SafeWaitHandle.DangerousGetHandle()
-            };
-
-            bool success;
-            int result;
-            if (UseHidD)
-            {
-                success = HidD_SetOutputReport(m_handle, m_writeBuffer, (uint)m_writeBuffer.Length);
-            }
-            else
-            {
-                success = WriteFile(m_handle, m_writeBuffer, (uint)m_writeBuffer.Length, out _, ref overlapped);
-            }
-
-            result = Marshal.GetLastWin32Error();
-            if (result == (int)Win32Error.IoPending)
-            {
-                if (token.CanBeCanceled)
+                Array.Copy(buffer, offset, m_writeBuffer, 0, Math.Min(m_writeBuffer.Length, buffer.Length - offset));
+                for (int i = buffer.Length - offset; i < m_writeBuffer.Length; i++)
                 {
-                    WaitHandle.WaitAny(new[] { waitHandle, token.WaitHandle }, Timeout.Infinite, false);
-                    if (token.IsCancellationRequested)
-                    {
-                        CancelIoEx(m_handle, overlapped);
-                        return;
-                    }
+                    m_writeBuffer[i] = 0;
                 }
 
-                success = GetOverlappedResult(m_handle, in overlapped, out _, true);
-                result = Marshal.GetLastWin32Error();
-            }
+                Debug.WriteLine($"Writing: {BitConverter.ToString(m_writeBuffer)}");
 
-            if (!success && result != (int)Win32Error.Success)
+                if (UseHidD)
+                {
+                    if (!HidD_SetOutputReport(m_handle, m_writeBuffer, (uint)m_writeBuffer.Length))
+                    {
+                        ThrowLastError();
+                    }
+                }
+                else
+                {
+                    TransferOverlapped(false, m_writeBuffer, m_writeEvent, Timeout.Infinite, token, out _);
+                }
+            }
+        }
+
+        private static void ThrowLastError()
+        {
+            int result = Marshal.GetLastWin32Error();
+            if (result != (int)Win32Error.Success)
             {
                 throw new Win32Exception(result);
             }
 
-            Debug.WriteLineIf(!success, "Result was failure but GetLastWin32Error returned success");
-            Debug.WriteLineIf(result != (int)Win32Error.Success, $"Result was success but GetLastWin32Error returned {result} (\"{new Win32Exception(result).Message}\")");
+            Debug.WriteLine("Result was failure but GetLastWin32Error returned success");
+        }
+
+        // Runs one overlapped ReadFile/WriteFile. The kernel keeps using the buffer and the OVERLAPPED until
+        // the operation is finished, so both live in unmanaged memory (a managed array can be moved by the GC),
+        // and this never returns before the operation has completed or its cancellation has gone through.
+        private TransferStatus TransferOverlapped(bool read, byte[] data, ManualResetEvent ioEvent, int timeout, CancellationToken token, out uint transferred)
+        {
+            int overlappedSize = Marshal.SizeOf(typeof(NativeOverlapped));
+            IntPtr memory = Marshal.AllocHGlobal(overlappedSize + data.Length);
+            try
+            {
+                IntPtr overlapped = memory;
+                IntPtr buffer = memory + overlappedSize;
+
+                ioEvent.Reset();
+                var header = new NativeOverlapped { EventHandle = ioEvent.SafeWaitHandle.DangerousGetHandle() };
+                Marshal.StructureToPtr(header, overlapped, false);
+
+                if (!read)
+                    Marshal.Copy(data, 0, buffer, data.Length);
+
+                bool success = read
+                    ? ReadFile(m_handle, buffer, (uint)data.Length, IntPtr.Zero, overlapped)
+                    : WriteFile(m_handle, buffer, (uint)data.Length, IntPtr.Zero, overlapped);
+                int result = Marshal.GetLastWin32Error();
+                if (!success && result != (int)Win32Error.IoPending)
+                    throw new Win32Exception(result);
+
+                var status = TransferStatus.Completed;
+                if (!success)
+                {
+                    int signaled = token.CanBeCanceled
+                        ? WaitHandle.WaitAny(new WaitHandle[] { ioEvent, token.WaitHandle }, timeout, false)
+                        : (ioEvent.WaitOne(timeout, false) ? 0 : WaitHandle.WaitTimeout);
+
+                    if (signaled != 0)
+                    {
+                        status = signaled == WaitHandle.WaitTimeout ? TransferStatus.TimedOut : TransferStatus.Cancelled;
+                        CancelIoEx(m_handle, overlapped);
+                    }
+                }
+
+                // Also waits for a cancellation requested above to go through
+                success = GetOverlappedResult(m_handle, overlapped, out transferred, true);
+                result = Marshal.GetLastWin32Error();
+                if (!success)
+                {
+                    if (status != TransferStatus.Completed && result == (int)Win32Error.OperationAborted)
+                        return status;
+
+                    throw new Win32Exception(result);
+                }
+
+                // A report that arrived just before the cancellation still counts
+                if (read)
+                    Marshal.Copy(buffer, data, 0, (int)Math.Min(transferred, (uint)data.Length));
+
+                return TransferStatus.Completed;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(memory);
+            }
         }
 
         public override void Flush() { }
