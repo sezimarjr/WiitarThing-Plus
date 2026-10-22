@@ -29,8 +29,22 @@ namespace WiitarThing
             this.radio = radio;
             this.info = info;
 
-            LastSeen = new DateTime(info.stLastSeen.Year, info.stLastSeen.Month, info.stLastSeen.Day, info.stLastSeen.Hour, info.stLastSeen.Minute, info.stLastSeen.Second, info.stLastSeen.Milliseconds);
-            LastUsed = new DateTime(info.stLastUsed.Year, info.stLastUsed.Month, info.stLastUsed.Day, info.stLastUsed.Hour, info.stLastUsed.Minute, info.stLastUsed.Second, info.stLastUsed.Milliseconds);
+            LastSeen = ToDateTime(info.stLastSeen);
+            LastUsed = ToDateTime(info.stLastUsed);
+        }
+
+        // Windows reports all-zero times for devices that were never seen/used (e.g. a Wiimote
+        // being synced for the first time), which DateTime can't represent
+        private static DateTime ToDateTime(SYSTEMTIME time)
+        {
+            try
+            {
+                return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Milliseconds);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return DateTime.MinValue;
+            }
         }
 
         /// <summary>
