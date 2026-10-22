@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:local="clr-namespace:WiitarThing" x:Class="WiitarThing.MainWindow"
-        Title="WiitarThing" Height="480" Width="574" Loaded="Window_Loaded" Activated="Window_Activated"Icon="/WiitarThing;component/Images/GHWT_Wii_Guitar.png" Background="{DynamicResource BrushSocialBlue}" StateChanged="Window_StateChanged" MinWidth="624" MinHeight="480" Closing="Window_Closing">
+        Title="WiitarThing" Height="480" Width="574" Loaded="Window_Loaded" Activated="Window_Activated" Icon="/WiitarThing;component/Images/GHWT_Wii_Guitar.png" Background="{DynamicResource BrushSocialBlue}" StateChanged="Window_StateChanged" MinWidth="624" MinHeight="480" Closing="Window_Closing">
     <Grid>
         <Grid.Resources>
             <local:ShowWindowCommand x:Key="ShowWindow" />
