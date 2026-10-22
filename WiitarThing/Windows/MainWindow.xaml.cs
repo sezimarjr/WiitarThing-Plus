@@ -50,7 +50,6 @@ namespace WiitarThing
         private List<DeviceControl> deviceList;
         private Task _refreshTask;
         private CancellationTokenSource _refreshToken;
-        private bool _refreshing;
 
         public MainWindow()
         {
@@ -284,26 +283,38 @@ namespace WiitarThing
 
         private void AutoRefresh(bool set)
         {
-            if (set && !_refreshing)
+            if (set)
             {
-                _refreshing = true;
-                _refreshToken = new CancellationTokenSource();
+                if (_refreshToken != null && !_refreshToken.IsCancellationRequested)
+                    return;
+
+                // Each loop owns its token: restarting right after a cancel used to be ignored
+                // because the old loop hadn't woken up to notice it yet
+                var token = new CancellationTokenSource();
+                _refreshToken = token;
                 _refreshTask = new Task(new Action(() =>
                 {
-                    while (!_refreshToken.IsCancellationRequested)
+                    while (!token.IsCancellationRequested)
                     {
                         Thread.Sleep(1000);
-                        if (_refreshToken.IsCancellationRequested) break;
+                        if (token.IsCancellationRequested) break;
                         Application.Current?.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => Refresh()));
                     }
-
-                    _refreshing = false;
-                }), _refreshToken.Token);
+                }), token.Token, TaskCreationOptions.LongRunning);
                 _refreshTask.Start();
             }
-            else if (!set && _refreshing)
+            else
             {
-                _refreshToken.Cancel();
+                _refreshToken?.Cancel();
+            }
+        }
+
+        // Auto refresh pauses while another app (e.g. the game) has focus; pick it back up when we get focus again
+        private void Window_Activated(object sender, EventArgs e)
+        {
+            if (menu_AutoRefresh.IsChecked)
+            {
+                AutoRefresh(true);
             }
         }
 
@@ -328,7 +339,10 @@ namespace WiitarThing
             menu_MsBluetooth.IsChecked = !UserPrefs.Instance.toshibaMode;
 
             Refresh();
-            AutoRefresh(menu_AutoRefresh.IsChecked && ApplicationIsActivated());
+
+            // Not gated on focus: when started minimized or with Windows, the window never has focus
+            // at this point, and auto-connect would otherwise never run
+            AutoRefresh(menu_AutoRefresh.IsChecked);
         }
 
         private void DeviceControl_OnConnectStateChange(DeviceControl sender, DeviceState oldState, DeviceState newState)
