@@ -51,3 +51,5 @@ using System.Windows;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("2.7.0.6")]
 [assembly: AssemblyFileVersion("2.7.0.6")]
+// Shown in the title bar and About menu so this custom build isn't mistaken for the official release
+[assembly: AssemblyInformationalVersion("2.7.0.6-nossa")]

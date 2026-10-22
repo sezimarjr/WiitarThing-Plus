@@ -46,6 +46,19 @@ namespace WiitarThing
 
         public static MainWindow Instance { get; private set; }
 
+        // The informational version carries the build tag (e.g. "2.7.0.6-nossa"); fall back to the plain version
+        private static string DisplayVersion
+        {
+            get
+            {
+                var assembly = System.Reflection.Assembly.GetEntryAssembly();
+                var info = (System.Reflection.AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(
+                    assembly, typeof(System.Reflection.AssemblyInformationalVersionAttribute));
+
+                return info?.InformationalVersion ?? assembly.GetName().Version.ToString();
+            }
+        }
+
         private List<DeviceInfo> hidList;
         private List<DeviceControl> deviceList;
         private Task _refreshTask;
@@ -86,8 +99,7 @@ namespace WiitarThing
             Instance = this;
 
 
-            Version version = System.Reflection.Assembly.GetEntryAssembly().GetName().Version;
-            Title = "WiitarThing v" + version.ToString();
+            Title = "WiitarThing v" + DisplayVersion;
 
 #if DEBUG
             Title += " Debug Build";
@@ -322,8 +334,7 @@ namespace WiitarThing
         {
             try
             {
-                Version version = System.Reflection.Assembly.GetEntryAssembly().GetName().Version;
-                menu_version.Header = "Version " + version.ToString(); 
+                menu_version.Header = "Version " + DisplayVersion;
             }
             catch { }
 
