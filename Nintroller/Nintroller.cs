@@ -56,6 +56,16 @@ namespace NintrollerLib
 
         // boolean flag indicating whether guitar encryption has been fully set up and guitar bytes should be decrypted in every data report received
         private bool _encryptionEnabled = false;
+
+        // How many all-zero guitar reports in a row are needed before setting up encryption. A guitar that needs it
+        // (Nyko Frontman) sends nothing but zeros until then, while a regular guitar can send a few during a brief
+        // extension connector glitch; turning encryption on for a regular guitar garbles its frets.
+        // Reporting is continuous (~100 reports/s), so this is about 0.3 s.
+        private const int ENCRYPTION_ZERO_REPORTS_NEEDED = 30;
+        private int _zeroGuitarReports = 0;
+
+        // Decryption key in use once it has been identified (0 = not identified yet)
+        private byte _guitarKey = 0;
         #endregion
 
         #region Properties
@@ -308,6 +318,10 @@ namespace NintrollerLib
                 if (value != _encryptionEnabled)
                 {
                     Log("Guitar Encryption " + (value ? "enabled" : "disabled"));
+
+                    // A new encryption session may use the other key
+                    _guitarKey = 0;
+                    _zeroGuitarReports = 0;
                 }
                 _encryptionEnabled = value;
             }
@@ -638,22 +652,26 @@ namespace NintrollerLib
                by the format are actually 1. The 5th byte was chosen because it's very predictable - only 3 of its bits can vary (Down, -, +) so it has the
                smallest amount of possible values.
             */
-            byte decrypted = (byte)(((data[offset + 4] ^ 0x97) + 0x97) & 0xFF);
-            bool useCommonValue = (data[offset + 4] != 0xFF) && ((decrypted & 0xAB) == 0xAB);
+            /* The test only works while Down, - or + is held: with none of them pressed the 5th byte is 0xFF, which both keys
+               encrypt to 0xFF, and deciding per report then picked 0x4D on every idle report of a 0x97 guitar (garbled frets
+               whenever only frets or strum up were pressed). So decide once from a report where the test is meaningful,
+               and keep that key; until then fall back to 0x4D as before.
+            */
+            if (_guitarKey == 0 && data[offset + 4] != 0xFF)
+            {
+                byte decrypted = (byte)(((data[offset + 4] ^ 0x97) + 0x97) & 0xFF);
+                _guitarKey = (byte)(((decrypted & 0xAB) == 0xAB) ? 0x97 : 0x4D);
+                Log("Guitar decryption key: 0x" + _guitarKey.ToString("X2"));
+            }
+
+            /* The Nyko Frontman uses the value 0x4D. Basically I found it by taking some examples of encrypted bytes I got from the guitar which don't decrypt
+               correctly with 0x97, then trying all possible values until reaching the one that decrypts all of them correctly.
+            */
+            byte key = _guitarKey != 0 ? _guitarKey : (byte)0x4D;
 
             for (int i = 0; i < 6; i++)
             {
-                if (useCommonValue)
-                {
-                    data[offset + i] = (byte)(((data[offset + i] ^ 0x97) + 0x97) & 0xFF);
-                }
-                else
-                {
-                    /* The Nyko Frontman uses the value 0x4D. Basically I found it by taking some examples of encrypted bytes I got from the guitar which don't decrypt
-                       correctly with 0x97, then trying all possible values until reaching the one that decrypts all of them correctly.
-                    */
-                    data[offset + i] = (byte)(((data[offset + i] ^ 0x4D) + 0x4D) & 0xFF);
-                }
+                data[offset + i] = (byte)(((data[offset + i] ^ key) + key) & 0xFF);
             }
 
 #if DEBUG // explicit check here to avoid constant garbage allocations in release
@@ -1361,8 +1379,11 @@ namespace NintrollerLib
                                     }
                                 }
 
-                                if (allZero) // checking this only if _encryptionEnabled=false
+                                _zeroGuitarReports = allZero ? _zeroGuitarReports + 1 : 0;
+
+                                if (_zeroGuitarReports >= ENCRYPTION_ZERO_REPORTS_NEEDED) // checking this only if _encryptionEnabled=false
                                 {
+                                    _zeroGuitarReports = 0;
                                     /* ASSUMPTION: if all guitar bytes are zero, it means the guitar will send its real data only after setting up encryption
                                     as described here: https://wiibrew.org/wiki/Wiimote/Extension_Controllers#Encryption_setup
                                     This conclusion was reached by sniffing Bluetooth traffic while playing Guitar Hero 3 on the Dolphin emulator with
@@ -1374,6 +1395,12 @@ namespace NintrollerLib
                                     WriteToMemory(Constants.REGISTER_EXTENSION_INIT_1, new byte[] { 0xAA }); // step 0 - write 0xAA to register 0xF0
                                     return;
                                     // continue other steps in Acknowledgement Reporting
+                                }
+
+                                if (allZero)
+                                {
+                                    // Not real input either way; don't pass a burst of zeros on as presses
+                                    return;
                                 }
                             }
                         }
