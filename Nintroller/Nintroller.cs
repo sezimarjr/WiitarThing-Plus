@@ -66,6 +66,12 @@ namespace NintrollerLib
 
         // Decryption key in use once it has been identified (0 = not identified yet)
         private byte _guitarKey = 0;
+
+        // Whether the last status report said an extension is plugged in, and how many times the extension type
+        // was read again because the answer contradicted that
+        private const int EXTENSION_TYPE_RETRIES = 10;
+        private bool _extensionReported = false;
+        private int _extensionTypeRetries = 0;
         #endregion
 
         #region Properties
@@ -764,6 +770,8 @@ namespace NintrollerLib
                             // Extension/Type
                             // Not relyable for Pro Controller U
                             bool ext = (report[3] & 0x02) != 0;
+                            _extensionReported = ext;
+                            _extensionTypeRetries = 0;
                             if (ext || true)
                             {
                                 //lock (_readingObj)
@@ -845,6 +853,23 @@ namespace NintrollerLib
                                 ((long)r[2] << 24) | 
                                 ((long)r[3] << 16) | 
                                 ((long)r[4] <<  8) | r[5];
+
+                            /* Right after connecting, the extension may not answer yet: the read fails (error bits set) or comes back
+                               as zeros, and zeros are the ID of a bare Wiimote. A plugged-in guitar was then treated as a bare Wiimote
+                               until it was unplugged and plugged back in. If the status report said an extension is there, ask again.
+                            */
+                            if ((!noError || (ControllerType)type == ControllerType.Wiimote) &&
+                                _extensionReported && _extensionTypeRetries < EXTENSION_TYPE_RETRIES)
+                            {
+                                _extensionTypeRetries++;
+                                Log("Extension reported but its type read as " + (noError ? "none" : "an error") + ", retry " + _extensionTypeRetries);
+
+                                // Give the extension a moment; only happens while discovering, not during play
+                                Thread.Sleep(50);
+                                _readType = ReadReportType.Extension_A;
+                                ReadMemory(Constants.REGISTER_EXTENSION_TYPE_2, 1);
+                                break;
+                            }
 
                             bool typeChange = false;
                             ControllerType newType = ControllerType.PartiallyInserted;
