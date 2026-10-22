@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 
 namespace WiitarThing.Windows
 {
@@ -7,6 +8,9 @@ namespace WiitarThing.Windows
     /// </summary>
     public partial class CalDefaultWindow : Window
     {
+        // The devices listed in copyCombo, in the same order (the "all" entry is left out)
+        private List<Property> copySources = new List<Property>();
+
         public CalDefaultWindow()
         {
             InitializeComponent();
@@ -29,10 +33,10 @@ namespace WiitarThing.Windows
                 }
             }
 
-            foreach (var pref in UserPrefs.Instance.devicePrefs)
+            copySources = UserPrefs.Instance.devicePrefs.FindAll(pref => pref.hid != "all");
+            foreach (var pref in copySources)
             {
-                if (pref.hid != "all")
-                    copyCombo.Items.Add(pref.name);
+                copyCombo.Items.Add(pref.name);
             }
 
             if (copyCombo.Items.Count > 0)
@@ -68,7 +72,7 @@ namespace WiitarThing.Windows
             else if (radioCopy.IsChecked ?? false)
             {
                 prop.calPref = Property.CalibrationPreference.Custom;
-                var copy = UserPrefs.Instance.devicePrefs[copyCombo.SelectedIndex];
+                var copy = copySources[copyCombo.SelectedIndex];
                 prop.autoConnect = copy.autoConnect;
                 prop.autoNum = copy.autoNum;
                 prop.calString = copy.calString;
@@ -76,14 +80,14 @@ namespace WiitarThing.Windows
                 prop.useRumble = copy.useRumble;
             }
 
-            UserPrefs.Instance.defaultProperty = prop;
+            UserPrefs.Instance.SetDefaultProperty(prop);
             UserPrefs.SavePrefs();
             Close();
         }
 
         private void clearBtn_Click(object sender, RoutedEventArgs e)
         {
-            UserPrefs.Instance.devicePrefs.Remove(UserPrefs.Instance.defaultProperty);
+            UserPrefs.Instance.SetDefaultProperty(null);
             UserPrefs.Instance.defaultProfile = null;
             UserPrefs.SavePrefs();
             Close();

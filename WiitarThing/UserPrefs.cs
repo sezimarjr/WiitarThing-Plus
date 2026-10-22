@@ -214,7 +214,33 @@ namespace WiitarThing
                 }
             }
 
-            return defaultProperty;
+            if (defaultProperty == null)
+            {
+                return null;
+            }
+
+            // Hand out a copy for this device: sharing the default object meant editing one
+            // device's properties changed (and saved over) the defaults for all of them
+            return new Property(defaultProperty) { hid = hid };
+        }
+
+        /// <summary>
+        /// Sets the default properties for devices without their own, and stores them so they survive a restart.
+        /// </summary>
+        public void SetDefaultProperty(Property property)
+        {
+            if (defaultProperty != null)
+            {
+                devicePrefs.Remove(defaultProperty);
+            }
+
+            devicePrefs.RemoveAll(p => p.hid.ToLower().Equals("all"));
+
+            defaultProperty = property;
+            if (property != null)
+            {
+                devicePrefs.Add(property);
+            }
         }
 
         public void AddDevicePref(Property property)
@@ -231,6 +257,8 @@ namespace WiitarThing
                     pref.rumbleIntensity = property.rumbleIntensity;
                     pref.useRumble       = property.useRumble;
                     pref.calPref         = property.calPref;
+                    pref.calString       = property.calString;
+                    pref.pointerMode     = property.pointerMode;
 
                     return;
                 }
