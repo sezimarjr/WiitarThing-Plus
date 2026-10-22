@@ -18,6 +18,15 @@ namespace NintrollerLib
 #endif
     }
 
+    /// <summary>
+    /// A state whose tilt calibration can be read and replaced (applied through the interface so the
+    /// boxed state held by <see cref="Nintroller"/> is changed in place).
+    /// </summary>
+    public interface IGuitarTiltCalibratable
+    {
+        GuitarTiltCalibration TiltCalibration { get; set; }
+    }
+
     public interface INintrollerParsable
     {
         void Parse(byte[] input, int offset = 0);

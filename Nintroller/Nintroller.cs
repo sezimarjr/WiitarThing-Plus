@@ -72,6 +72,9 @@ namespace NintrollerLib
         private const int EXTENSION_TYPE_RETRIES = 10;
         private bool _extensionReported = false;
         private int _extensionTypeRetries = 0;
+
+        // Saved tilt calibration, applied to every guitar state created for this controller
+        private GuitarTiltCalibration _guitarTiltCalibration;
         #endregion
 
         #region Properties
@@ -1018,6 +1021,9 @@ namespace NintrollerLib
                                         {
                                             _state.SetCalibration(_calibrations.ClassicProCalibration);
                                         }
+
+                                        // A new guitar state starts uncalibrated; restore the saved tilt calibration
+                                        ((IGuitarTiltCalibratable)_state).TiltCalibration = _guitarTiltCalibration;
 #if LOW_BANDWIDTH
                                         applyReport = InputReport.BtnsExt;
 #else
@@ -1699,6 +1705,20 @@ namespace NintrollerLib
             if (_calibrations != null)
                 _calibrations.SetCalibrations(preset);
         }
+        /// <summary>
+        /// Sets the tilt calibration for guitars on this controller. It's applied to the current guitar right away
+        /// and to any guitar detected later, so it survives reconnects and extension re-detection.
+        /// </summary>
+        public void SetGuitarTiltCalibration(GuitarTiltCalibration calibration)
+        {
+            _guitarTiltCalibration = calibration;
+
+            if (_state is IGuitarTiltCalibratable guitar)
+            {
+                guitar.TiltCalibration = calibration;
+            }
+        }
+
         /// <summary>
         /// Sets the device's calibrations based on a string.
         /// </summary>

@@ -8,7 +8,25 @@ using System.Windows.Forms;
 
 namespace NintrollerLib
 {
-    public struct Guitar : INintrollerState
+    /// <summary>
+    /// The guitar's tilt calibration, set with the 1 (resting pose) and 2 (tilted pose) buttons on the Wiimote.
+    /// Public fields so it can be stored in the user's prefs.
+    /// </summary>
+    public struct GuitarTiltCalibration
+    {
+        public bool IsSet;
+
+        // Accelerometer calibration taken in the resting pose (button 1)
+        public int CenterX, CenterY, CenterZ;
+        public int MinX, MinY, MinZ;
+        public int MaxX, MaxY, MaxZ;
+
+        // Tilt angle that maps to 0 and to full tilt (button 2)
+        public float Neutral;
+        public float Tilted;
+    }
+
+    public struct Guitar : INintrollerState, IGuitarTiltCalibratable
     {
         public static class InputNames
         {
@@ -125,6 +143,57 @@ namespace NintrollerLib
         }
 
         public bool CALIB_Enable_TouchStrip;
+
+        /// <summary>
+        /// True while the Wiimote's 1 or 2 button is held, i.e. the tilt calibration is being changed.
+        /// </summary>
+        public bool TiltCalibrating => SpecialButtonTiltCalibMin || SpecialButtonTiltCalibMax;
+
+        public GuitarTiltCalibration TiltCalibration
+        {
+            get
+            {
+                return new GuitarTiltCalibration
+                {
+                    IsSet = true,
+                    CenterX = wiimote.accelerometer.centerX,
+                    CenterY = wiimote.accelerometer.centerY,
+                    CenterZ = wiimote.accelerometer.centerZ,
+                    MinX = wiimote.accelerometer.minX,
+                    MinY = wiimote.accelerometer.minY,
+                    MinZ = wiimote.accelerometer.minZ,
+                    MaxX = wiimote.accelerometer.maxX,
+                    MaxY = wiimote.accelerometer.maxY,
+                    MaxZ = wiimote.accelerometer.maxZ,
+                    Neutral = CALIB_Tilt_Neutral,
+                    Tilted = CALIB_Tilt_Tilted
+                };
+            }
+            set
+            {
+                if (!value.IsSet)
+                    return;
+
+                wiimote.accelerometer.centerX = value.CenterX;
+                wiimote.accelerometer.centerY = value.CenterY;
+                wiimote.accelerometer.centerZ = value.CenterZ;
+                wiimote.accelerometer.minX = value.MinX;
+                wiimote.accelerometer.minY = value.MinY;
+                wiimote.accelerometer.minZ = value.MinZ;
+                wiimote.accelerometer.maxX = value.MaxX;
+                wiimote.accelerometer.maxY = value.MaxY;
+                wiimote.accelerometer.maxZ = value.MaxZ;
+
+                // Same as calibrating with button 1
+                wiimote.accelerometer.deadX = 0;
+                wiimote.accelerometer.deadY = 0;
+                wiimote.accelerometer.deadZ = 0;
+
+                CALIB_Tilt_Neutral = value.Neutral;
+                CALIB_Tilt_Tilted = value.Tilted;
+                oldTilt = 0;
+            }
+        }
 
         public float CALIB_Tilt_Neutral;
         public float CALIB_Tilt_Weight;

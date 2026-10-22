@@ -39,6 +39,8 @@ namespace WiitarThing
         private float rumbleSlowMult    = 0.5f;
         private volatile bool rumbleRequested = false;
         private int   rumbleWriteQueued = 0;
+        private GuitarTiltCalibration pendingTiltCalibration;
+        private System.Threading.Timer tiltSaveTimer;
         
         // internally public members
         internal Holders.Holder holder;
@@ -528,6 +530,11 @@ namespace WiitarThing
 
                     holder.SetValue(Guitar.InputNames.START, gtr.Start);
                     holder.SetValue(Guitar.InputNames.SELECT, gtr.Select);
+
+                    if (gtr.TiltCalibrating)
+                    {
+                        TrackTiltCalibration(gtr);
+                    }
 #endregion
                     break;
 
@@ -922,6 +929,47 @@ namespace WiitarThing
                     device.SetCalibration(calStor.WiimoteCalibration);
                     break;
             }
+
+            // The presets above reset the accelerometer, so put the saved guitar tilt calibration back on top
+            if (properties != null && properties.tiltCalibration.IsSet)
+            {
+                device.SetGuitarTiltCalibration(properties.tiltCalibration);
+            }
+        }
+
+        // Called on the input thread while the Wiimote's 1 or 2 button is held. Saves once the
+        // buttons have been released for a second, so holding them doesn't save on every report.
+        private void TrackTiltCalibration(Guitar gtr)
+        {
+            pendingTiltCalibration = gtr.TiltCalibration;
+
+            if (tiltSaveTimer == null)
+            {
+                tiltSaveTimer = new System.Threading.Timer(SaveTiltCalibration);
+            }
+
+            tiltSaveTimer.Change(1000, Timeout.Infinite);
+        }
+
+        private void SaveTiltCalibration(object state)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (properties == null)
+                    return;
+
+                GuitarTiltCalibration calibration = pendingTiltCalibration;
+                device.SetGuitarTiltCalibration(calibration);
+
+                properties.tiltCalibration = calibration;
+                UserPrefs.Instance.AddDevicePref(properties);
+                UserPrefs.SavePrefs();
+
+                MainWindow.Instance.ShowBalloon(
+                    "Tilt Calibration Saved",
+                    dName + ": tilt calibration saved. It will be restored the next time this controller connects.",
+                    Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info);
+            }));
         }
 
         private void CheckIR(string assignment)
