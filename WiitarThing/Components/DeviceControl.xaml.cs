@@ -43,6 +43,7 @@ namespace WiitarThing
         internal Property       properties;
         internal int            targetXDevice = -1;
         internal bool           lowBatteryFired = false;
+        private bool            lowBatteryShown = false;
         internal bool           identifying = false;
         internal string         dName = "";
         internal System.Threading.Timer updateTimer;
@@ -212,6 +213,7 @@ namespace WiitarThing
             device?.StopReading();
             holder?.Close();
             lowBatteryFired = false;
+            lowBatteryShown = false;
             ConnectionState = DeviceState.Discovered;
             Dispatcher.BeginInvoke
             (
@@ -667,7 +669,7 @@ namespace WiitarThing
                 RumbleStep();
 //            }
 
-            SetBatteryStatus(device.BatteryLevel == BatteryStatus.Low);
+            SetBatteryStatus(device.BatteryLevel <= BatteryStatus.Low);
         }
 
         void RumbleStep()
@@ -716,10 +718,12 @@ namespace WiitarThing
             }
         }
 
+        // Called from the input and timer threads, so the UI is only touched through the dispatcher
         private void SetBatteryStatus(bool isLow)
         {
             if (isLow && !lowBatteryFired)
             {
+                lowBatteryShown = true;
                 Dispatcher.BeginInvoke(
                     System.Windows.Threading.DispatcherPriority.Background,
                     new Action(() =>
@@ -740,10 +744,14 @@ namespace WiitarThing
                         }
                 ));
             }
-            else if (!isLow && lowBatteryFired)
+            else if (!isLow && lowBatteryShown)
             {
-                statusGradient = (GradientStop)FindResource("AntemBlue");
+                lowBatteryShown = false;
                 lowBatteryFired = false;
+                Dispatcher.BeginInvoke(
+                    System.Windows.Threading.DispatcherPriority.Background,
+                    new Action(() => statusGradient.Color = (Color)FindResource("AntemBlue"))
+                );
             }
         }
 
