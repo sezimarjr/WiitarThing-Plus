@@ -439,7 +439,10 @@ namespace NintrollerLib
                 if (currentWhammyValue > CALIB_Whammy_Max)
                     CALIB_Whammy_Max = currentWhammyValue;
 
-                float whammy = (2.0f * (1.0f * (currentWhammyValue - CALIB_Whammy_Min) / (CALIB_Whammy_Max - CALIB_Whammy_Min)) - 1);
+                // Until the bar has moved, min == max and the division below would give NaN; treat it as at rest
+                float whammy = CALIB_Whammy_Max > CALIB_Whammy_Min
+                    ? (2.0f * (1.0f * (currentWhammyValue - CALIB_Whammy_Min) / (CALIB_Whammy_Max - CALIB_Whammy_Min)) - 1)
+                    : -1;
 
                 WhammyHigh = Math.Max(whammy, 0);
                 WhammyLow = Math.Min(whammy, 0);
@@ -505,12 +508,21 @@ namespace NintrollerLib
             
             float tiltAngle = (float)Math.Atan(Math.Sqrt(Math.Pow(wiimote.accelerometer.X,2)+ Math.Pow(wiimote.accelerometer.Y,2) / wiimote.accelerometer.Z));
 
+            // The square root goes negative (NaN) when Z < 0 past vertical or during a jerk; keep the last good
+            // angle instead of letting NaN reach the output and the smoothing below
+            if (float.IsNaN(tiltAngle) || float.IsInfinity(tiltAngle))
+                tiltAngle = oldTilt;
+
             // Tilt calibration max
             if (SpecialButtonTiltCalibMax)
                 CALIB_Tilt_Tilted = tiltAngle;
 
             float tilt = _MapRange((CALIB_Tilt_Weight * tiltAngle) + ((1 - CALIB_Tilt_Weight) * oldTilt), CALIB_Tilt_Neutral, CALIB_Tilt_Tilted, 0, 1);
             oldTilt = tiltAngle;
+
+            // Neutral == Tilted (not calibrated yet) divides by zero in _MapRange
+            if (float.IsNaN(tilt))
+                tilt = 0;
 
             TiltHigh = Math.Min(Math.Max(tilt, 0), 1);
             TiltLow = Math.Max(Math.Min(tilt, 0), -1);
