@@ -408,10 +408,16 @@ namespace WiitarThing.Holders
         public XInputHolder(ControllerType t) : this()
         {
             Mappings = GetDefaultMapping(t);
+
+            // Not connected yet, so this only picks the vid/pid the virtual controller will be created with
+            SetType(t);
         }
 
         public void SetType(ControllerType t)
         {
+            ushort oldVid = vid;
+            ushort oldPid = pid;
+
             switch (t)
             {
                 case ControllerType.Guitar:
@@ -429,7 +435,9 @@ namespace WiitarThing.Holders
                 default:
                     break;
             }
-            if (connected)
+
+            // Re-plugging makes the game see the controller disconnect, so only do it when the identity changed
+            if (connected && (vid != oldVid || pid != oldPid))
             {
                 int prevID = ID;
                 RemoveXInput(prevID);

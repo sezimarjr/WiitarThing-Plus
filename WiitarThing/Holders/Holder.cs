@@ -57,6 +57,13 @@ namespace WiitarThing.Holders
             Mappings.Clear();
         }
 
+        // Swaps in a fully built mapping set at once; Update() runs on other threads and would
+        // throw if it enumerated Mappings while it was being cleared and refilled
+        public void ReplaceMappings(Dictionary<string, string> mappings)
+        {
+            Mappings = mappings;
+        }
+
         public void ClearAllValues()
         {
             Values.Clear();

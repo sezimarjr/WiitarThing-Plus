@@ -302,9 +302,20 @@ namespace WiitarThing
 
             if (holder != null)
             {
+                // Start from the defaults for the new extension, but keep the user's profile on top of them
+                var mappings = Holders.XInputHolder.GetDefaultMapping(DeviceType);
+                Profile profile = ReadProfile(properties?.profile);
+                if (profile != null)
+                {
+                    for (int i = 0; i < Math.Min(profile.controllerMapKeys.Count, profile.controllerMapValues.Count); i++)
+                    {
+                        mappings[profile.controllerMapKeys[i]] = profile.controllerMapValues[i];
+                    }
+                }
+
+                holder.ReplaceMappings(mappings);
                 holder.ClearAllValues();
-                holder.ClearAllMappings();
-                holder.AddMapping(DeviceType);
+                (holder as Holders.XInputHolder)?.SetType(DeviceType);
             }
 
             Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, 
@@ -757,6 +768,21 @@ namespace WiitarThing
 
         private void LoadProfile(string profilePath, Holders.Holder h)
         {
+            Profile loadedProfile = ReadProfile(profilePath);
+
+            if (loadedProfile != null)
+            {
+                for (int i = 0; i < Math.Min(loadedProfile.controllerMapKeys.Count, loadedProfile.controllerMapValues.Count); i++)
+                {
+                    h.SetMapping(loadedProfile.controllerMapKeys[i], loadedProfile.controllerMapValues[i]);
+                    CheckIR(loadedProfile.controllerMapKeys[i]);
+                }
+            }
+        }
+
+        // The device's profile file, or the default profile if it has none or it can't be read
+        private Profile ReadProfile(string profilePath)
+        {
             Profile loadedProfile = null;
 
             if (!string.IsNullOrWhiteSpace(profilePath) && File.Exists(profilePath))
@@ -781,14 +807,7 @@ namespace WiitarThing
                 loadedProfile = UserPrefs.Instance.defaultProfile;
             }
 
-            if (loadedProfile != null)
-            {
-                for (int i = 0; i < Math.Min(loadedProfile.controllerMapKeys.Count, loadedProfile.controllerMapValues.Count); i++)
-                {
-                    h.SetMapping(loadedProfile.controllerMapKeys[i], loadedProfile.controllerMapValues[i]);
-                    CheckIR(loadedProfile.controllerMapKeys[i]);
-                }
-            }
+            return loadedProfile;
         }
 
         private void UpdateIcon(ControllerType cType)
