@@ -218,52 +218,18 @@ namespace WiitarThing
                 }
             }
 
-            int target = -1;
-
-            for (int i = 0; i < 4; i++)
-            {
-                if (Holders.XInputHolder.availabe.Length > i)
-                {
-                    if (Holders.XInputHolder.availabe[i])
-                    {
-                        target = i;
-                        break;
-                    }
-                }
-            }
-            
-            if (target < 0)
+            if (NextFreeXInputSlot() < 0)
             {
                 return;
             }
 
-            //while (!Holders.XInputHolder.availabe[target] && target < 4)
-            //{
-            //    target++;
-            //}
-
             // Auto Connect First Available devices
-            for (int a = 0; a < connectSeq.Count; a++)
+            var firstAvailable = connectSeq.FindAll(d => d.Key == 5);
+            connectSeq.RemoveAll(d => d.Key == 5);
+
+            foreach (KeyValuePair<int, DeviceControl> d in firstAvailable)
             {
-                var thingy = connectSeq[a];
-
-                if (thingy.Key == 5)
-                {
-                    if (Holders.XInputHolder.availabe[target] && target < 4)
-                    {
-                        if (thingy.Value.Device.Connected || thingy.Value.Device.DataStream.Open())
-                        {
-                            thingy.Value.targetXDevice = target;
-                            thingy.Value.ConnectionState = DeviceState.Connected_XInput;
-                            thingy.Value.Device.BeginReading();
-                            thingy.Value.Device.GetStatus();
-                            thingy.Value.Device.SetPlayerLED(target + 1);
-                            target++;
-                        }
-                    }
-
-                    connectSeq.Remove(thingy);
-                }
+                AutoConnect(d.Value);
             }
 
             // Auto connect in preferred order
@@ -277,21 +243,42 @@ namespace WiitarThing
                     i = 0;
                 }
             }
-            
+
             foreach(KeyValuePair<int, DeviceControl> d in connectSeq)
             {
-                if (Holders.XInputHolder.availabe[target] && target < 4)
+                AutoConnect(d.Value);
+            }
+        }
+
+        // Returns the first unused XInput player slot, or -1 when all of them are taken
+        private static int NextFreeXInputSlot()
+        {
+            for (int i = 0; i < Holders.XInputHolder.availabe.Length; i++)
+            {
+                if (Holders.XInputHolder.availabe[i])
                 {
-                    if (d.Value.Device.Connected || d.Value.Device.DataStream.Open())
-                    {
-                        d.Value.targetXDevice = target;
-                        d.Value.ConnectionState = DeviceState.Connected_XInput;
-                        d.Value.Device.BeginReading();
-                        d.Value.Device.GetStatus();
-                        d.Value.Device.SetPlayerLED(target + 1);
-                        target++;
-                    }
+                    return i;
                 }
+            }
+
+            return -1;
+        }
+
+        private static void AutoConnect(DeviceControl device)
+        {
+            int target = NextFreeXInputSlot();
+            if (target < 0)
+            {
+                return;
+            }
+
+            if (device.Device.Connected || device.Device.DataStream.Open())
+            {
+                device.targetXDevice = target;
+                device.ConnectionState = DeviceState.Connected_XInput;
+                device.Device.BeginReading();
+                device.Device.GetStatus();
+                device.Device.SetPlayerLED(target + 1);
             }
         }
 
