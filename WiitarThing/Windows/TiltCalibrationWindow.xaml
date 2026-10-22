@@ -1,0 +1,168 @@
+<Window x:Class="WiitarThing.Windows.TiltCalibrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Calibrar inclinação" Width="540" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource BrushSocialBlue}"
+        Icon="../Images/WiinUSoft_Icon32.png" Closed="Window_Closed">
+    <Window.Resources>
+        <SolidColorBrush x:Key="StarPowerBrush" Color="#FF2EB8F5"/>
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource BrushAntemWhite}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushAntemSky}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14"/>
+        </Style>
+
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushJohnTheRevelator}"/>
+        </Style>
+
+        <Style x:Key="StepBadge" TargetType="Border">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource BrushJohnTheRevelator}"/>
+        </Style>
+
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ButonFillBrush1}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushAntemBlue}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+    </Window.Resources>
+
+    <StackPanel>
+        <!-- Header -->
+        <Border Padding="20,14">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="{DynamicResource JohnTheRevelater}" Offset="0"/>
+                    <GradientStop Color="{DynamicResource AntemBlue}" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel>
+                <TextBlock Text="Inclinação · Star Power" FontSize="22" FontWeight="Bold" Foreground="White"/>
+                <TextBlock x:Name="deviceNameText" Text="Guitarra" FontSize="13" Foreground="#E6FFFFFF" Margin="0,2,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Margin="16,14,16,16">
+            <!-- Live view -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="210"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Width="190" Height="180" HorizontalAlignment="Left">
+                            <Image x:Name="guitarImage" Source="{DynamicResource GTRIcon}" Width="150" Height="150"
+                                   RenderTransformOrigin="0.62,0.68">
+                                <Image.RenderTransform>
+                                    <RotateTransform x:Name="guitarRotation" Angle="-30"/>
+                                </Image.RenderTransform>
+                                <Image.Effect>
+                                    <DropShadowEffect x:Name="guitarGlow" Color="#FF2EB8F5" ShadowDepth="0" BlurRadius="0" Opacity="0"/>
+                                </Image.Effect>
+                            </Image>
+                        </Grid>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="ÂNGULO" Style="{StaticResource Caption}"/>
+                            <TextBlock x:Name="angleText" Text="--" FontSize="34" FontWeight="Bold" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                            <TextBlock Text="STAR POWER" Style="{StaticResource Caption}" Margin="0,8,0,0"/>
+                            <TextBlock x:Name="percentText" Text="--" FontSize="34" FontWeight="Bold" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                            <TextBlock x:Name="liveStatusText" Text="Conecte a guitarra para começar" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"
+                                       Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Meter -->
+                    <Grid Margin="0,12,0,0">
+                        <Border x:Name="meterTrack" Height="26" CornerRadius="13" Background="{DynamicResource BrushEyeing}"
+                                BorderBrush="{DynamicResource BrushAntemSky}" BorderThickness="2">
+                            <Grid ClipToBounds="True">
+                                <Border x:Name="meterFill" HorizontalAlignment="Left" Width="0" CornerRadius="11">
+                                    <Border.Background>
+                                        <LinearGradientBrush x:Name="meterBrush" StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop x:Name="meterStopStart" Color="#FFADCCEB" Offset="0"/>
+                                            <GradientStop x:Name="meterStopEnd" Color="#FF7CA3CA" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <!-- Star Power point (50%) -->
+                        <Rectangle Width="3" Height="34" Fill="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Center" RadiusX="1.5" RadiusY="1.5"/>
+                    </Grid>
+                    <Grid Margin="2,4,2,0">
+                        <TextBlock Text="posição de jogo" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Left"/>
+                        <TextBlock Text="▲ especial na maioria dos jogos" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="posição do especial" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Right"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Steps -->
+            <UniformGrid Columns="2" Margin="0,12,0,0">
+                <Border x:Name="step1Card" Style="{StaticResource Card}" Margin="0,0,6,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="step1Badge" Style="{StaticResource StepBadge}">
+                                <TextBlock x:Name="step1BadgeText" Text="1" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Posição de jogo" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,0,0"
+                                       Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                        </StackPanel>
+                        <TextBlock Text="Segure a guitarra do jeito que você toca, mesmo na diagonal." TextWrapping="Wrap" Margin="0,8,0,10" Height="36"/>
+                        <Button x:Name="captureRestingButton" Content="Marcar agora" Style="{StaticResource ActionButton}" Click="captureRestingButton_Click"/>
+                        <TextBlock x:Name="step1Status" Text="ou aperte 1 no Wiimote" FontSize="11" Margin="0,6,0,0" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="step2Card" Style="{StaticResource Card}" Margin="6,0,0,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="step2Badge" Style="{StaticResource StepBadge}">
+                                <TextBlock x:Name="step2BadgeText" Text="2" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Posição do especial" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,0,0"
+                                       Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                        </StackPanel>
+                        <TextBlock Text="Levante o braço só até onde você quer soltar o especial." TextWrapping="Wrap" Margin="0,8,0,10" Height="36"/>
+                        <Button x:Name="captureTiltedButton" Content="Marcar agora" Style="{StaticResource ActionButton}" Click="captureTiltedButton_Click"/>
+                        <TextBlock x:Name="step2Status" Text="ou aperte 2 no Wiimote" FontSize="11" Margin="0,6,0,0" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Range and warning -->
+            <Border x:Name="warningBox" Margin="0,12,0,0" Padding="10,8" CornerRadius="6" Background="#FFFFF1E0" BorderBrush="#FFDF6C25"
+                    BorderThickness="1" Visibility="Collapsed">
+                <TextBlock x:Name="warningText" TextWrapping="Wrap" Foreground="#FF9A4210"
+                           Text="As duas posições estão muito perto: o balanço normal da música pode soltar o especial sem querer."/>
+            </Border>
+            <TextBlock x:Name="rangeText" Margin="2,10,0,0" FontSize="12" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+
+            <!-- Footer -->
+            <DockPanel Margin="0,14,0,0" LastChildFill="False">
+                <TextBlock Text="Fica salvo para esta guitarra e volta sozinho ao reconectar." FontSize="11" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BrushJohnTheRevelator}" DockPanel.Dock="Left"/>
+                <Button x:Name="saveButton" Content="Salvar" Style="{StaticResource ActionButton}" Width="90" DockPanel.Dock="Right" Margin="8,0,0,0"
+                        IsDefault="True" Click="saveButton_Click"/>
+                <Button x:Name="cancelButton" Content="Cancelar" Style="{StaticResource ActionButton}" Width="90" DockPanel.Dock="Right"
+                        IsCancel="True"/>
+            </DockPanel>
+        </StackPanel>
+    </StackPanel>
+</Window>

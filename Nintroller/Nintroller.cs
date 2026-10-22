@@ -75,6 +75,9 @@ namespace NintrollerLib
 
         // Saved tilt calibration, applied to every guitar state created for this controller
         private GuitarTiltCalibration _guitarTiltCalibration;
+
+        // Tilt pose to capture from the next guitar report (-1 = none); set from the UI, used on the read thread
+        private volatile int _pendingTiltCapture = -1;
         #endregion
 
         #region Properties
@@ -1437,6 +1440,17 @@ namespace NintrollerLib
                         }
 
                         _state.Update(report);
+
+                        int capture = _pendingTiltCapture;
+                        if (capture >= 0 && _state is IGuitarTiltCalibratable guitar)
+                        {
+                            _pendingTiltCapture = -1;
+                            if ((GuitarTiltPose)capture == GuitarTiltPose.Resting)
+                                guitar.CaptureRestingPose();
+                            else
+                                guitar.CaptureTiltedPose();
+                        }
+
                         var arg = new NintrollerStateEventArgs(_currentType, _state, BatteryLevel);
 
                         try
@@ -1717,6 +1731,15 @@ namespace NintrollerLib
             {
                 guitar.TiltCalibration = calibration;
             }
+        }
+
+        /// <summary>
+        /// Captures a tilt pose from the next guitar report, like pressing the Wiimote's 1 (resting) or 2 (tilted) button.
+        /// Safe to call from any thread; it's applied on the read thread.
+        /// </summary>
+        public void CaptureGuitarTiltPose(GuitarTiltPose pose)
+        {
+            _pendingTiltCapture = (int)pose;
         }
 
         /// <summary>

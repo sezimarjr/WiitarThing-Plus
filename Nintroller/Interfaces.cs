@@ -25,6 +25,17 @@ namespace NintrollerLib
     public interface IGuitarTiltCalibratable
     {
         GuitarTiltCalibration TiltCalibration { get; set; }
+        void CaptureRestingPose();
+        void CaptureTiltedPose();
+    }
+
+    /// <summary>
+    /// Which tilt pose to capture from the next report, see <see cref="Nintroller.CaptureGuitarTiltPose"/>.
+    /// </summary>
+    public enum GuitarTiltPose
+    {
+        Resting,
+        Tilted
     }
 
     public interface INintrollerParsable

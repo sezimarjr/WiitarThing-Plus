@@ -148,6 +148,13 @@ namespace NintrollerLib
         /// True while the Wiimote's 1 or 2 button is held, i.e. the tilt calibration is being changed.
         /// </summary>
         public bool TiltCalibrating => SpecialButtonTiltCalibMin || SpecialButtonTiltCalibMax;
+        public bool TiltCalibratingResting => SpecialButtonTiltCalibMin;
+        public bool TiltCalibratingTilted => SpecialButtonTiltCalibMax;
+
+        /// <summary>
+        /// The tilt angle (radians) measured in the last report, before smoothing and mapping.
+        /// </summary>
+        public float TiltAngle => oldTilt;
 
         public GuitarTiltCalibration TiltCalibration
         {
@@ -238,6 +245,50 @@ namespace NintrollerLib
         private static float _MapRange(float s, float a1, float a2, float b1, float b2)
         {
             return b1 + (s - a1) * (b2 - b1) / (a2 - a1);
+        }
+
+        // Makes the current pose the "no tilt" pose (what the Wiimote's 1 button does)
+        private void SetRestingPose()
+        {
+            wiimote.accelerometer.centerX = wiimote.accelerometer.rawX;
+            wiimote.accelerometer.centerY = wiimote.accelerometer.rawY;
+            wiimote.accelerometer.centerZ = wiimote.accelerometer.rawZ - 32;
+
+            wiimote.accelerometer.minX = wiimote.accelerometer.centerX - 32;
+            wiimote.accelerometer.maxX = wiimote.accelerometer.centerX + 32;
+
+            wiimote.accelerometer.minY = wiimote.accelerometer.centerY - 32;
+            wiimote.accelerometer.maxY = wiimote.accelerometer.centerY + 32;
+
+            wiimote.accelerometer.minZ = wiimote.accelerometer.centerZ - 32;
+            wiimote.accelerometer.maxZ = wiimote.accelerometer.centerZ + 32;
+
+            wiimote.accelerometer.deadX = 0;
+            wiimote.accelerometer.deadY = 0;
+            wiimote.accelerometer.deadZ = 0;
+
+            wiimote.accelerometer.Normalize();
+
+            CALIB_Tilt_StartingZ = 0;
+
+            CALIB_Tilt_Neutral = 0;
+        }
+
+        /// <summary>
+        /// Same as pressing the Wiimote's 1 button: the pose from the last report becomes "no tilt".
+        /// </summary>
+        public void CaptureRestingPose()
+        {
+            SetRestingPose();
+            oldTilt = 0;
+        }
+
+        /// <summary>
+        /// Same as pressing the Wiimote's 2 button: the angle from the last report becomes full tilt.
+        /// </summary>
+        public void CaptureTiltedPose()
+        {
+            CALIB_Tilt_Tilted = oldTilt;
         }
 
         public void Update(byte[] data)
@@ -551,30 +602,9 @@ namespace NintrollerLib
             // Tilt calibration min / resting pose (+ initialize)
             if (SpecialButtonTiltCalibMin)
             {
-                wiimote.accelerometer.centerX = wiimote.accelerometer.rawX;
-                wiimote.accelerometer.centerY = wiimote.accelerometer.rawY;
-                wiimote.accelerometer.centerZ = wiimote.accelerometer.rawZ - 32;
-
-                wiimote.accelerometer.minX = wiimote.accelerometer.centerX - 32;
-                wiimote.accelerometer.maxX = wiimote.accelerometer.centerX + 32;
-
-                wiimote.accelerometer.minY = wiimote.accelerometer.centerY - 32;
-                wiimote.accelerometer.maxY = wiimote.accelerometer.centerY + 32;
-
-                wiimote.accelerometer.minZ = wiimote.accelerometer.centerZ - 32;
-                wiimote.accelerometer.maxZ = wiimote.accelerometer.centerZ + 32;
-
-                wiimote.accelerometer.deadX = 0;
-                wiimote.accelerometer.deadY = 0;
-                wiimote.accelerometer.deadZ = 0;
-
-                wiimote.accelerometer.Normalize();
-
-                CALIB_Tilt_StartingZ = 0;
-
-                CALIB_Tilt_Neutral = 0;
+                SetRestingPose();
             }
-            
+
             float tiltAngle = (float)Math.Atan(Math.Sqrt(Math.Pow(wiimote.accelerometer.X,2)+ Math.Pow(wiimote.accelerometer.Y,2) / wiimote.accelerometer.Z));
 
             // The square root goes negative (NaN) when Z < 0 past vertical or during a jerk; keep the last good

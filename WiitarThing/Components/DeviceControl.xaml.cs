@@ -41,6 +41,7 @@ namespace WiitarThing
         private int   rumbleWriteQueued = 0;
         private GuitarTiltCalibration pendingTiltCalibration;
         private System.Threading.Timer tiltSaveTimer;
+        private volatile bool tiltWindowOpen = false;
         
         // internally public members
         internal Holders.Holder holder;
@@ -204,6 +205,9 @@ namespace WiitarThing
                 UpdateIcon(device.Type);
                 SetName(device.Type.ToString());
             }
+
+            // Runs after an extension change too, which is when a guitar gets recognized
+            UpdateTiltButton();
         }
 
         public void SetName(string newName)
@@ -298,6 +302,8 @@ namespace WiitarThing
                 //    // Instantiate VJoy Holder (not for 1st release)
                 //    break;
             }
+
+            UpdateTiltButton();
         }
 
         void device_ExtensionChange(object sender, NintrollerExtensionEventArgs e)
@@ -941,6 +947,10 @@ namespace WiitarThing
         // buttons have been released for a second, so holding them doesn't save on every report.
         private void TrackTiltCalibration(Guitar gtr)
         {
+            // The calibration window saves (or discards) the result itself
+            if (tiltWindowOpen)
+                return;
+
             pendingTiltCalibration = gtr.TiltCalibration;
 
             if (tiltSaveTimer == null)
@@ -955,21 +965,59 @@ namespace WiitarThing
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (properties == null)
+                if (properties == null || tiltWindowOpen)
                     return;
 
-                GuitarTiltCalibration calibration = pendingTiltCalibration;
-                device.SetGuitarTiltCalibration(calibration);
-
-                properties.tiltCalibration = calibration;
-                UserPrefs.Instance.AddDevicePref(properties);
-                UserPrefs.SavePrefs();
+                StoreTiltCalibration(pendingTiltCalibration);
 
                 MainWindow.Instance.ShowBalloon(
                     "Tilt Calibration Saved",
                     dName + ": tilt calibration saved. It will be restored the next time this controller connects.",
                     Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info);
             }));
+        }
+
+        private void StoreTiltCalibration(GuitarTiltCalibration calibration)
+        {
+            device.SetGuitarTiltCalibration(calibration);
+
+            properties.tiltCalibration = calibration;
+            UserPrefs.Instance.AddDevicePref(properties);
+            UserPrefs.SavePrefs();
+        }
+
+        // The tilt calibration button only makes sense for a guitar that is connected and sending data
+        private void UpdateTiltButton()
+        {
+            bool guitarConnected = state == DeviceState.Connected_XInput && device != null && device.Type == ControllerType.Guitar;
+            btnTilt.Visibility = guitarConnected ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void btnTilt_Click(object sender, RoutedEventArgs e)
+        {
+            if (properties == null)
+                return;
+
+            GuitarTiltCalibration saved = properties.tiltCalibration;
+
+            tiltWindowOpen = true;
+            tiltSaveTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+
+            var win = new Windows.TiltCalibrationWindow(device, dName) { Owner = Window.GetWindow(this) };
+            bool keep = win.ShowDialog() == true;
+
+            tiltWindowOpen = false;
+
+            if (keep)
+            {
+                StoreTiltCalibration(win.Calibration);
+            }
+            else if (win.HasInitialCalibration)
+            {
+                // Put the guitar back exactly as it was, then forget the calibration again if none was saved
+                device.SetGuitarTiltCalibration(win.InitialCalibration);
+                device.SetGuitarTiltCalibration(saved);
+            }
         }
 
         private void CheckIR(string assignment)

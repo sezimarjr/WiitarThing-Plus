@@ -18,9 +18,16 @@
             </Rectangle.Fill>
         </Rectangle>
         <Label x:Name="labelUnavailable" Content="Device Unavailable" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" FontSize="16" FontStyle="Italic" Width="145" Foreground="#FF939393" Visibility="Hidden"/>
-        <Image x:Name="icon" HorizontalAlignment="Left" Margin="12,16,0,0" VerticalAlignment="Top" Source="{DynamicResource UIcon}" Width="80" Height="48"/>
+        <Image x:Name="icon" HorizontalAlignment="Left" Margin="10,16,0,0" VerticalAlignment="Top" Source="{DynamicResource UIcon}" Width="62" Height="48"/>
+        <Button x:Name="btnTilt" HorizontalAlignment="Left" Margin="73,39,0,0" VerticalAlignment="Top" Width="32" Height="32" BorderBrush="{DynamicResource BrushAntemBlue}" BorderThickness="2" ToolTip="Calibrar inclinação (Star Power)" Background="{DynamicResource ButonFillBrush1}" Click="btnTilt_Click" Visibility="Collapsed">
+            <TextBlock Text="★" FontSize="18" Foreground="#FF2EB8F5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="#FF0B5F86" ShadowDepth="0" BlurRadius="3" Opacity="0.8"/>
+                </TextBlock.Effect>
+            </TextBlock>
+        </Button>
         <Label x:Name="labelName" Content="Unknown Device" HorizontalAlignment="Left" Margin="100,8,0,0" VerticalAlignment="Top" Width="160" FontSize="14" Height="26"/>
-        <Button x:Name="btnDebugView" HorizontalAlignment="Left" Margin="81,46,0,0" VerticalAlignment="Top" Width="24" Height="24" BorderBrush="#FFEA0000" BorderThickness="2" FontSize="11" ToolTip="Debug View" Click="btnDebugView_Click">
+        <Button x:Name="btnDebugView" HorizontalAlignment="Left" Margin="77,8,0,0" VerticalAlignment="Top" Width="24" Height="24" BorderBrush="#FFEA0000" BorderThickness="2" FontSize="11" ToolTip="Debug View" Click="btnDebugView_Click">
             <Button.Background>
                 <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
                     <GradientStop Color="#FFFFBEBE" Offset="0"/>
