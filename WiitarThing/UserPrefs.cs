@@ -18,12 +18,12 @@ namespace WiitarThing
                     if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + @"\prefs.config"))
                     {
                         DataPath = AppDomain.CurrentDomain.BaseDirectory + @"\prefs.config";
-                        LoadPrefs();
+                        LoadPrefsOrDefaults();
                     }
                     else if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WiitarThing_prefs.config"))
                     {
                         DataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WiitarThing_prefs.config";
-                        LoadPrefs();
+                        LoadPrefsOrDefaults();
                     }
                     else
                     {
@@ -136,33 +136,56 @@ namespace WiitarThing
             return successful;
         }
 
+        // A missing or unreadable prefs file must never leave Instance null, or the app crashes on every start
+        private static void LoadPrefsOrDefaults()
+        {
+            if (!LoadPrefs() || _instance == null)
+            {
+                try
+                {
+                    // Keep the broken file around instead of silently overwriting it on the next save
+                    File.Copy(DataPath, DataPath + ".broken", true);
+                }
+                catch (Exception e)
+                {
+                    System.Diagnostics.Debug.WriteLine(e.Message);
+                }
+
+                _instance = new UserPrefs();
+            }
+
+            if (_instance.devicePrefs == null)
+                _instance.devicePrefs = new List<Property>();
+
+            if (_instance.defaultProfile == null)
+                _instance.defaultProfile = new Profile();
+        }
+
         public static bool SavePrefs()
         {
             bool successful = false;
             XmlSerializer X = new XmlSerializer(typeof(UserPrefs));
+            string tempPath = DataPath + ".tmp";
 
             try
             {
+                // Write a complete copy first and then swap it in, so a crash or power loss
+                // mid-save can't leave a truncated prefs file behind
+                using (FileStream stream = File.Create(tempPath))
+                using (StreamWriter writer = new StreamWriter(stream))
+                {
+                    X.Serialize(writer, _instance);
+                    writer.Flush();
+                    stream.Flush(true);
+                }
+
                 if (File.Exists(DataPath))
                 {
-                    FileInfo prefs = new FileInfo(DataPath);
-                    using (FileStream stream = File.Open(DataPath, FileMode.Create, FileAccess.ReadWrite))
-                    using (StreamWriter writer = new StreamWriter(stream))
-                    {
-                        X.Serialize(writer, _instance);
-                        writer.Close();
-                        stream.Close();
-                    }
+                    File.Replace(tempPath, DataPath, null);
                 }
                 else
                 {
-                    using (FileStream stream = File.Create(DataPath))
-                    using (StreamWriter writer = new StreamWriter(stream))
-                    {
-                        X.Serialize(writer, _instance);
-                        writer.Close();
-                        stream.Close();
-                    }
+                    File.Move(tempPath, DataPath);
                 }
 
                 successful = true;
@@ -170,6 +193,12 @@ namespace WiitarThing
             catch (Exception e)
             {
                 System.Diagnostics.Debug.WriteLine(e.Message);
+
+                try
+                {
+                    File.Delete(tempPath);
+                }
+                catch { }
             }
 
             return successful;
