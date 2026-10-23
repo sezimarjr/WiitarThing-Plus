@@ -124,6 +124,26 @@ namespace WiitarThing
 #if LOW_BANDWIDTH
             Title += " - LIGHT VERSION";
 #endif
+
+            if (SessionMonitor.Enabled)
+            {
+                Title += MonitorTitleSuffix;
+            }
+        }
+
+        private const string MonitorTitleSuffix = "  —  MONITORANDO SESSÃO";
+
+        /// <summary>
+        /// Marks the window as monitoring after the monitor was switched on from a second launch.
+        /// </summary>
+        public void ShowMonitorState()
+        {
+            if (!Title.EndsWith(MonitorTitleSuffix))
+            {
+                Title += MonitorTitleSuffix;
+            }
+
+            ShowBalloon("Session Monitor On", "Recording Bluetooth timing and fret behavior to the monitor folder until WiitarThing is closed.", BalloonIcon.Info);
         }
 
         public void HideWindow()

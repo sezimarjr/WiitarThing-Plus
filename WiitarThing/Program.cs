@@ -17,6 +17,12 @@ namespace WiitarThing
             if (SingleInstance<App>.InitializeAsFirstInstance(Unique))
             {
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
+                if (App.WantsMonitor(Environment.GetCommandLineArgs()))
+                {
+                    SessionMonitor.Start();
+                }
+
                 App.Main();
 
                 // Allow single instance code to perform cleanup operations

@@ -43,6 +43,21 @@ namespace WiitarThing
         private System.Threading.Timer tiltSaveTimer;
         private volatile bool tiltWindowOpen = false;
         private ControllerType lastReportedType = ControllerType.Unknown;
+        private SessionMonitor.DeviceStats monitorStats;
+
+        // Created on first use, so a monitor started while the controller is already connected picks it up
+        private SessionMonitor.DeviceStats MonitorStats
+        {
+            get
+            {
+                if (monitorStats == null)
+                {
+                    monitorStats = SessionMonitor.ForDevice(string.IsNullOrWhiteSpace(dName) ? "Controle" : dName);
+                }
+
+                return monitorStats;
+            }
+        }
         
         // internally public members
         internal Holders.Holder holder;
@@ -226,6 +241,7 @@ namespace WiitarThing
         {
             device?.StopReading();
             holder?.Close();
+            monitorStats?.Reset();
             lowBatteryFired = false;
             lowBatteryShown = false;
             ConnectionState = DeviceState.Discovered;
@@ -316,6 +332,7 @@ namespace WiitarThing
         {
             DeviceType = e.controllerType;
             WiitarDebug.Log($"{dName}: extension detected as {DeviceType} (connection: {state})", WiitarDebug.LogLevel.Warning);
+            SessionMonitor.Event(dName, "extensão detectada: " + DeviceType);
 
             try
             {
@@ -569,6 +586,11 @@ namespace WiitarThing
                     {
                         TrackTiltCalibration(gtr);
                     }
+
+                    if (SessionMonitor.Enabled)
+                    {
+                        MonitorStats.OnReport(gtr.G, gtr.R, gtr.Y, gtr.B, gtr.O, gtr.Up, gtr.Down);
+                    }
 #endregion
                     break;
 
@@ -650,6 +672,9 @@ namespace WiitarThing
 
         private void device_Disconnected(object sender, DisconnectedEventArgs e)
         {
+            SessionMonitor.Event(dName, "conexão perdida com o controle");
+            monitorStats?.Reset();
+
             Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
                 new Action(() =>
                 {
