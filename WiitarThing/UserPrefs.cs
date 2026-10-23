@@ -260,6 +260,7 @@ namespace WiitarThing
                     pref.calString       = property.calString;
                     pref.pointerMode     = property.pointerMode;
                     pref.tiltCalibration = property.tiltCalibration;
+                    pref.tiltPressesSelect = property.tiltPressesSelect;
 
                     return;
                 }
@@ -332,6 +333,7 @@ namespace WiitarThing
         public string calString = ""; // not the best solution for saving the custom config but makes it easy
         public PointerOffScreenMode pointerMode = PointerOffScreenMode.Center;
         public NintrollerLib.GuitarTiltCalibration tiltCalibration;
+        public bool tiltPressesSelect = true;
 
         public Property()
         {
@@ -363,6 +365,7 @@ namespace WiitarThing
             calString = copy.calString;
             pointerMode = copy.pointerMode;
             tiltCalibration = copy.tiltCalibration;
+            tiltPressesSelect = copy.tiltPressesSelect;
         }
     }
 

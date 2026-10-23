@@ -47,12 +47,20 @@ namespace WiitarThing.Windows
         /// </summary>
         public GuitarTiltCalibration Calibration { get; private set; }
 
-        public TiltCalibrationWindow(Nintroller device, string deviceName)
+        /// <summary>
+        /// Whether tilting past the Star Power point should also press Select.
+        /// </summary>
+        public bool TiltPressesSelect { get; private set; }
+
+        public TiltCalibrationWindow(Nintroller device, string deviceName, bool tiltPressesSelect)
         {
             InitializeComponent();
 
             this.device = device;
             deviceNameText.Text = deviceName;
+            pressSelectCheck.IsChecked = tiltPressesSelect;
+            TiltPressesSelect = tiltPressesSelect;
+            UpdatePointLabel();
 
             device.StateUpdate += Device_StateUpdate;
 
@@ -138,7 +146,7 @@ namespace WiitarThing.Windows
                 percentText.Foreground = new SolidColorBrush(StarPowerColor);
                 liveStatusText.Foreground = percentText.Foreground;
                 liveStatusText.FontWeight = FontWeights.Bold;
-                liveStatusText.Text = "⚡ Especial ativado!";
+                liveStatusText.Text = TiltPressesSelect ? "⚡ Especial ativado! (botão Select apertado)" : "⚡ Especial ativado!";
             }
             else
             {
@@ -189,6 +197,17 @@ namespace WiitarThing.Windows
         {
             device.CaptureGuitarTiltPose(GuitarTiltPose.Tilted);
             MarkStep(2);
+        }
+
+        private void pressSelectCheck_Changed(object sender, RoutedEventArgs e)
+        {
+            TiltPressesSelect = pressSelectCheck.IsChecked == true;
+            UpdatePointLabel();
+        }
+
+        private void UpdatePointLabel()
+        {
+            pointLabel.Text = TiltPressesSelect ? "▲ aqui aperta o especial (Select)" : "▲ especial na maioria dos jogos";
         }
 
         private void saveButton_Click(object sender, RoutedEventArgs e)

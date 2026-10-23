@@ -42,6 +42,7 @@ namespace WiitarThing
         private GuitarTiltCalibration pendingTiltCalibration;
         private System.Threading.Timer tiltSaveTimer;
         private volatile bool tiltWindowOpen = false;
+        private bool tiltStarPowerHeld = false;
         private ControllerType lastReportedType = ControllerType.Unknown;
         private SessionMonitor.DeviceStats monitorStats;
 
@@ -580,7 +581,11 @@ namespace WiitarThing
                     holder.SetValue(Guitar.InputNames.TILTLOW, gtr.TiltLow);
 
                     holder.SetValue(Guitar.InputNames.START, gtr.Start);
-                    holder.SetValue(Guitar.InputNames.SELECT, gtr.Select);
+
+                    // Tilting past the Star Power point also presses Select, the button games use for Star Power,
+                    // so it works even where a game doesn't pick up the tilt axis
+                    bool tiltSelect = properties != null && properties.tiltPressesSelect && UpdateTiltStarPower(gtr.TiltHigh);
+                    holder.SetValue(Guitar.InputNames.SELECT, gtr.Select || tiltSelect);
 
                     if (gtr.TiltCalibrating)
                     {
@@ -996,6 +1001,21 @@ namespace WiitarThing
             }
         }
 
+        // Tilt "button" with hysteresis: pressed at the Star Power point, released only well below it,
+        // so sensor noise around the threshold doesn't make it flicker
+        private const float TiltPressAt = 0.5f;
+        private const float TiltReleaseAt = 0.35f;
+
+        private bool UpdateTiltStarPower(float tilt)
+        {
+            if (!tiltStarPowerHeld && tilt >= TiltPressAt)
+                tiltStarPowerHeld = true;
+            else if (tiltStarPowerHeld && tilt < TiltReleaseAt)
+                tiltStarPowerHeld = false;
+
+            return tiltStarPowerHeld;
+        }
+
         // Called on the input thread while the Wiimote's 1 or 2 button is held. Saves once the
         // buttons have been released for a second, so holding them doesn't save on every report.
         private void TrackTiltCalibration(Guitar gtr)
@@ -1056,13 +1076,14 @@ namespace WiitarThing
             tiltWindowOpen = true;
             tiltSaveTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
-            var win = new Windows.TiltCalibrationWindow(device, dName) { Owner = Window.GetWindow(this) };
+            var win = new Windows.TiltCalibrationWindow(device, dName, properties.tiltPressesSelect) { Owner = Window.GetWindow(this) };
             bool keep = win.ShowDialog() == true;
 
             tiltWindowOpen = false;
 
             if (keep)
             {
+                properties.tiltPressesSelect = win.TiltPressesSelect;
                 StoreTiltCalibration(win.Calibration);
             }
             else if (win.HasInitialCalibration)

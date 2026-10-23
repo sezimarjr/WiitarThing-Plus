@@ -105,7 +105,7 @@
                     </Grid>
                     <Grid Margin="2,4,2,0">
                         <TextBlock Text="posição de jogo" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Left"/>
-                        <TextBlock Text="▲ especial na maioria dos jogos" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="pointLabel" Text="▲ ponto do especial" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Center"/>
                         <TextBlock Text="posição do especial" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Right"/>
                     </Grid>
                 </StackPanel>
@@ -153,6 +153,18 @@
                            Text="As duas posições estão muito perto: o balanço normal da música pode soltar o especial sem querer."/>
             </Border>
             <TextBlock x:Name="rangeText" Margin="2,10,0,0" FontSize="12" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+
+            <!-- Tilt as the Star Power button -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="12,10">
+                <StackPanel>
+                    <CheckBox x:Name="pressSelectCheck" FontWeight="Bold" VerticalContentAlignment="Center"
+                              Foreground="{DynamicResource BrushJohnTheRevelator}" Checked="pressSelectCheck_Changed" Unchecked="pressSelectCheck_Changed">
+                        Inclinar aperta o botão de especial (Select / −)
+                    </CheckBox>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Margin="20,4,0,0" Foreground="{DynamicResource BrushJohnTheRevelator}"
+                               Text="Ao passar da marca de 50%, o WiitarThing aperta o mesmo botão que o − da guitarra (botão 7 / Back). Funciona em jogos que não reconhecem a inclinação, como o Clone Hero, sem configurar nada."/>
+                </StackPanel>
+            </Border>
 
             <!-- Footer -->
             <DockPanel Margin="0,14,0,0" LastChildFill="False">
