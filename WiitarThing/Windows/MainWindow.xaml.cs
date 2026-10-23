@@ -91,6 +91,9 @@ namespace WiitarThing
                 return;
             }
 
+            // Send the controller library's diagnostics (connection and extension detection) to WiitarLog.log
+            Nintroller.LogSink = message => WiitarDebug.Log("[Nintroller] " + message, WiitarDebug.LogLevel.Warning);
+
             hidList = new List<DeviceInfo>();
             deviceList = new List<DeviceControl>();
 

@@ -375,11 +375,18 @@ namespace NintrollerLib
                 _stream.Close();
         }
 
+        /// <summary>
+        /// Optional destination for the library's diagnostic messages (e.g. the app's log file), also in release builds.
+        /// </summary>
+        public static Action<string> LogSink;
+
         internal static void Log(string message)
         {
             #if DEBUG
             Debug.WriteLine(message);
             #endif
+
+            LogSink?.Invoke(message);
         }
 
         #endregion
@@ -437,6 +444,7 @@ namespace NintrollerLib
             if (!_reading && _stream != null && _stream.Open())
             {
                 _reading = true;
+                Log("Reading started (type so far: " + _currentType + ")");
 
                 // The first status report of a new session is the one that discovers the extension
                 // (StopReading leaves this as Unknown, which made a reconnect ignore that report)
@@ -452,6 +460,10 @@ namespace NintrollerLib
                     Name = "Nintroller read"
                 };
                 thread.Start();
+            }
+            else
+            {
+                Log("BeginReading: not started (reading " + _reading + ", stream " + (_stream != null) + ")");
             }
         }
 
@@ -704,7 +716,8 @@ namespace NintrollerLib
                 #region Status Reports
                 case InputReport.Status:
                     #region Parse Status
-                    Log("Status Report");
+                    Log("Status Report: extension bit " + ((report[3] & 0x02) != 0 ? 1 : 0) + ", status type " + _statusType +
+                        ", ack " + _ackType + ", type " + _currentType + (_state == null ? " (no state yet)" : ""));
                     // core buttons can be parsed if desired
 
                     switch (_statusType)
@@ -734,6 +747,7 @@ namespace NintrollerLib
                             if ((_statusType == StatusType.Unknown && _state == null) ||
                                 (_ackType.ToString().StartsWith("EncryptionSetup") || _ackType.ToString().StartsWith("IR_Step")))
                             {
+                                Log("Status report ignored");
                                 break;
                             }
 
@@ -859,6 +873,8 @@ namespace NintrollerLib
                                 ((long)r[2] << 24) | 
                                 ((long)r[3] << 16) | 
                                 ((long)r[4] <<  8) | r[5];
+
+                            Log("Extension type read: 0x" + type.ToString("X12") + (noError ? "" : " (read error " + (report[3] & 0x0F) + ")"));
 
                             /* Right after connecting, the extension may not answer yet: the read fails (error bits set) or comes back
                                as zeros, and zeros are the ID of a bare Wiimote. A plugged-in guitar was then treated as a bare Wiimote
@@ -1131,7 +1147,7 @@ namespace NintrollerLib
 
                     if (report[4] == 0x03)
                     {
-                        Log("Possible Error with Operation");
+                        Log("Possible Error with Operation (output report 0x" + report[3].ToString("X2") + ", while " + _ackType + ")");
                         return;
                     }
 
@@ -1702,6 +1718,7 @@ namespace NintrollerLib
         /// </summary>
         public void StopReading()
         {
+            Log("Reading stopped");
             _reading = false;
             _readSession?.Cancel();
             _connected = false;
