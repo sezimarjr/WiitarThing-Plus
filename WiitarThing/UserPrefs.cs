@@ -261,6 +261,7 @@ namespace WiitarThing
                     pref.pointerMode     = property.pointerMode;
                     pref.tiltCalibration = property.tiltCalibration;
                     pref.tiltPressesSelect = property.tiltPressesSelect;
+                    pref.tiltPressPercent = property.tiltPressPercent;
 
                     return;
                 }
@@ -334,6 +335,7 @@ namespace WiitarThing
         public PointerOffScreenMode pointerMode = PointerOffScreenMode.Center;
         public NintrollerLib.GuitarTiltCalibration tiltCalibration;
         public bool tiltPressesSelect = true;
+        public int tiltPressPercent = 80;
 
         public Property()
         {
@@ -366,6 +368,7 @@ namespace WiitarThing
             pointerMode = copy.pointerMode;
             tiltCalibration = copy.tiltCalibration;
             tiltPressesSelect = copy.tiltPressesSelect;
+            tiltPressPercent = copy.tiltPressPercent;
         }
     }
 

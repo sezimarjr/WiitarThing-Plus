@@ -100,13 +100,16 @@
                                 </Border>
                             </Grid>
                         </Border>
-                        <!-- Star Power point (50%) -->
-                        <Rectangle Width="3" Height="34" Fill="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Center" RadiusX="1.5" RadiusY="1.5"/>
+                        <!-- Star Power point, moved to the chosen percentage in code -->
+                        <Rectangle x:Name="pointMarker" Width="3" Height="34" Fill="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Left" RadiusX="1.5" RadiusY="1.5"/>
                     </Grid>
                     <Grid Margin="2,4,2,0">
                         <TextBlock Text="posição de jogo" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Left"/>
-                        <TextBlock x:Name="pointLabel" Text="▲ ponto do especial" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Center"/>
                         <TextBlock Text="posição do especial" FontSize="11" Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Right"/>
+                    </Grid>
+                    <Grid Margin="0,2,0,0">
+                        <TextBlock x:Name="pointLabel" Text="▲ ponto do especial" FontSize="11" FontWeight="Bold"
+                                   Foreground="{DynamicResource BrushJohnTheRevelator}" HorizontalAlignment="Left"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -162,7 +165,14 @@
                         Inclinar aperta o botão de especial (Select / −)
                     </CheckBox>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Margin="20,4,0,0" Foreground="{DynamicResource BrushJohnTheRevelator}"
-                               Text="Ao passar da marca de 50%, o WiitarThing aperta o mesmo botão que o − da guitarra (botão 7 / Back). Funciona em jogos que não reconhecem a inclinação, como o Clone Hero, sem configurar nada."/>
+                               Text="Ao passar da marca e ficar lá por 0,1 s, o WiitarThing aperta o mesmo botão que o − da guitarra (botão 7 / Back). Esse pequeno tempo ignora os trancos das palhetadas. Funciona em jogos que não reconhecem a inclinação, como o Clone Hero."/>
+                    <StackPanel Orientation="Horizontal" Margin="20,10,0,0">
+                        <TextBlock Text="Soltar o especial a partir de" VerticalAlignment="Center" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                        <Slider x:Name="pressPercentSlider" Width="170" Minimum="50" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
+                                TickPlacement="BottomRight" Margin="10,0" VerticalAlignment="Center" ValueChanged="pressPercentSlider_ValueChanged"/>
+                        <TextBlock x:Name="pressPercentText" Text="80%" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

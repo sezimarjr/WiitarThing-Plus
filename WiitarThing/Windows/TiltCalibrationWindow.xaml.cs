@@ -52,14 +52,22 @@ namespace WiitarThing.Windows
         /// </summary>
         public bool TiltPressesSelect { get; private set; }
 
-        public TiltCalibrationWindow(Nintroller device, string deviceName, bool tiltPressesSelect)
+        /// <summary>
+        /// How far (percent of the calibrated range) the guitar must be tilted before Select is pressed.
+        /// </summary>
+        public int PressPercent { get; private set; }
+
+        public TiltCalibrationWindow(Nintroller device, string deviceName, bool tiltPressesSelect, int pressPercent)
         {
             InitializeComponent();
 
             this.device = device;
             deviceNameText.Text = deviceName;
-            pressSelectCheck.IsChecked = tiltPressesSelect;
             TiltPressesSelect = tiltPressesSelect;
+            PressPercent = pressPercent;
+            pressSelectCheck.IsChecked = tiltPressesSelect;
+            pressPercentSlider.Value = pressPercent;
+            pressPercentSlider.IsEnabled = tiltPressesSelect;
             UpdatePointLabel();
 
             device.StateUpdate += Device_StateUpdate;
@@ -114,6 +122,7 @@ namespace WiitarThing.Windows
                 liveStatusText.Text = "Conecte a guitarra para começar";
                 meterFill.Width = 0;
                 guitarGlow.Opacity = 0;
+                PlacePointMarker();
                 return;
             }
 
@@ -122,7 +131,7 @@ namespace WiitarThing.Windows
 
             double degrees = (s.Angle - s.Calibration.Neutral) * 180 / Math.PI;
             double tilt = Math.Max(0, Math.Min(1, s.Tilt));
-            bool starPower = tilt >= StarPowerPoint;
+            bool starPower = tilt >= StarPowerThreshold;
 
             angleText.Text = string.Format("{0:0}°", degrees);
             percentText.Text = string.Format("{0:0}%", tilt * 100);
@@ -133,6 +142,7 @@ namespace WiitarThing.Windows
 
             double trackWidth = Math.Max(0, meterTrack.ActualWidth - 4);
             meterFill.Width = trackWidth * tilt;
+            PlacePointMarker();
 
             double glowTarget = starPower ? 1 : 0;
             guitarGlow.Opacity += (glowTarget - guitarGlow.Opacity) * 0.3;
@@ -163,6 +173,21 @@ namespace WiitarThing.Windows
             warningBox.Visibility = restingCaptured && tiltedCaptured && Math.Abs(rangeDegrees) < MinimumRangeDegrees
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        // Puts the marker (and its label, kept inside the meter's width) at the Star Power point
+        private void PlacePointMarker()
+        {
+            double width = meterTrack.ActualWidth;
+            if (width <= 0)
+                return;
+
+            double x = 2 + (width - 4) * StarPowerThreshold;
+            pointMarker.Margin = new Thickness(Math.Max(0, x - pointMarker.Width / 2), 0, 0, 0);
+
+            double labelWidth = pointLabel.ActualWidth;
+            double labelLeft = Math.Max(0, Math.Min(width - labelWidth, x - 6));
+            pointLabel.Margin = new Thickness(labelLeft, 0, 0, 0);
         }
 
         private void MarkStep(int step)
@@ -202,12 +227,34 @@ namespace WiitarThing.Windows
         private void pressSelectCheck_Changed(object sender, RoutedEventArgs e)
         {
             TiltPressesSelect = pressSelectCheck.IsChecked == true;
+            if (pressPercentSlider != null)
+                pressPercentSlider.IsEnabled = TiltPressesSelect;
             UpdatePointLabel();
         }
 
+        private void pressPercentSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            // Also fires while the window is still being built, before the other controls exist
+            if (pressPercentText == null)
+                return;
+
+            PressPercent = (int)Math.Round(pressPercentSlider.Value);
+            pressPercentText.Text = PressPercent + "%";
+            UpdatePointLabel();
+        }
+
+        // Where the guitar has to get to for Star Power: the chosen point when tilt presses Select,
+        // otherwise the halfway point most games use
+        private float StarPowerThreshold => TiltPressesSelect ? PressPercent / 100f : StarPowerPoint;
+
         private void UpdatePointLabel()
         {
-            pointLabel.Text = TiltPressesSelect ? "▲ aqui aperta o especial (Select)" : "▲ especial na maioria dos jogos";
+            if (pointLabel == null)
+                return;
+
+            pointLabel.Text = TiltPressesSelect
+                ? string.Format("▲ aqui aperta o especial ({0}%)", PressPercent)
+                : "▲ especial na maioria dos jogos";
         }
 
         private void saveButton_Click(object sender, RoutedEventArgs e)

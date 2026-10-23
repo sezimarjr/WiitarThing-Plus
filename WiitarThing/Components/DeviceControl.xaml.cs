@@ -43,6 +43,7 @@ namespace WiitarThing
         private System.Threading.Timer tiltSaveTimer;
         private volatile bool tiltWindowOpen = false;
         private bool tiltStarPowerHeld = false;
+        private int? tiltAboveSince;
         private ControllerType lastReportedType = ControllerType.Unknown;
         private SessionMonitor.DeviceStats monitorStats;
 
@@ -1001,17 +1002,37 @@ namespace WiitarThing
             }
         }
 
-        // Tilt "button" with hysteresis: pressed at the Star Power point, released only well below it,
-        // so sensor noise around the threshold doesn't make it flicker
-        private const float TiltPressAt = 0.5f;
-        private const float TiltReleaseAt = 0.35f;
+        // Tilt "button": pressed only after the tilt stays past the chosen point for a moment, released only well
+        // below it. The accelerometer also feels motion, so a hard strum or a bump reads as a brief tilt spike;
+        // requiring the tilt to be held filters those out, and the gap between press and release stops flicker.
+        private const int TiltHoldMs = 100;
+        private const float TiltReleaseGap = 0.2f;
 
         private bool UpdateTiltStarPower(float tilt)
         {
-            if (!tiltStarPowerHeld && tilt >= TiltPressAt)
-                tiltStarPowerHeld = true;
-            else if (tiltStarPowerHeld && tilt < TiltReleaseAt)
-                tiltStarPowerHeld = false;
+            float pressAt = Math.Max(10, Math.Min(100, properties.tiltPressPercent)) / 100f;
+            float releaseAt = Math.Max(0.1f, pressAt - TiltReleaseGap);
+            int now = Environment.TickCount;
+
+            if (tiltStarPowerHeld)
+            {
+                if (tilt < releaseAt)
+                    tiltStarPowerHeld = false;
+            }
+            else if (tilt >= pressAt)
+            {
+                if (!tiltAboveSince.HasValue)
+                    tiltAboveSince = now;
+                else if (unchecked(now - tiltAboveSince.Value) >= TiltHoldMs)
+                    tiltStarPowerHeld = true;
+            }
+            else
+            {
+                tiltAboveSince = null;
+            }
+
+            if (tiltStarPowerHeld)
+                tiltAboveSince = null;
 
             return tiltStarPowerHeld;
         }
@@ -1076,7 +1097,7 @@ namespace WiitarThing
             tiltWindowOpen = true;
             tiltSaveTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
-            var win = new Windows.TiltCalibrationWindow(device, dName, properties.tiltPressesSelect) { Owner = Window.GetWindow(this) };
+            var win = new Windows.TiltCalibrationWindow(device, dName, properties.tiltPressesSelect, properties.tiltPressPercent) { Owner = Window.GetWindow(this) };
             bool keep = win.ShowDialog() == true;
 
             tiltWindowOpen = false;
@@ -1084,6 +1105,7 @@ namespace WiitarThing
             if (keep)
             {
                 properties.tiltPressesSelect = win.TiltPressesSelect;
+                properties.tiltPressPercent = win.PressPercent;
                 StoreTiltCalibration(win.Calibration);
             }
             else if (win.HasInitialCalibration)
