@@ -329,7 +329,7 @@ namespace NintrollerLib
             {
                 if (value != _encryptionEnabled)
                 {
-                    Log("Guitar Encryption " + (value ? "enabled" : "disabled"));
+                    LogDiagnostic("Guitar Encryption " + (value ? "enabled" : "disabled"));
 
                     // A new encryption session may use the other key
                     _guitarKey = 0;
@@ -376,7 +376,8 @@ namespace NintrollerLib
         }
 
         /// <summary>
-        /// Optional destination for the library's diagnostic messages (e.g. the app's log file), also in release builds.
+        /// Optional destination for connection and detection diagnostics (e.g. the app's log file), also in release builds.
+        /// Only rare events go here; per-report and per-write messages stay debug-only so logging never slows input down.
         /// </summary>
         public static Action<string> LogSink;
 
@@ -385,7 +386,11 @@ namespace NintrollerLib
             #if DEBUG
             Debug.WriteLine(message);
             #endif
+        }
 
+        internal static void LogDiagnostic(string message)
+        {
+            Log(message);
             LogSink?.Invoke(message);
         }
 
@@ -444,7 +449,7 @@ namespace NintrollerLib
             if (!_reading && _stream != null && _stream.Open())
             {
                 _reading = true;
-                Log("Reading started (type so far: " + _currentType + ")");
+                LogDiagnostic("Reading started (type so far: " + _currentType + ")");
 
                 // The first status report of a new session is the one that discovers the extension
                 // (StopReading leaves this as Unknown, which made a reconnect ignore that report)
@@ -463,7 +468,7 @@ namespace NintrollerLib
             }
             else
             {
-                Log("BeginReading: not started (reading " + _reading + ", stream " + (_stream != null) + ")");
+                LogDiagnostic("BeginReading: not started (reading " + _reading + ", stream " + (_stream != null) + ")");
             }
         }
 
@@ -626,7 +631,7 @@ namespace NintrollerLib
                 }
                 catch (Exception ex)
                 {
-                    Log("Error while writing to the stream: " + ex.ToString());
+                    LogDiagnostic("Error while writing to the stream: " + ex.ToString());
                     StopReading();
                     Disconnected?.Invoke(this, new DisconnectedEventArgs(ex));
                 }
@@ -690,7 +695,7 @@ namespace NintrollerLib
             {
                 byte decrypted = (byte)(((data[offset + 4] ^ 0x97) + 0x97) & 0xFF);
                 _guitarKey = (byte)(((decrypted & 0xAB) == 0xAB) ? 0x97 : 0x4D);
-                Log("Guitar decryption key: 0x" + _guitarKey.ToString("X2"));
+                LogDiagnostic("Guitar decryption key: 0x" + _guitarKey.ToString("X2"));
             }
 
             /* The Nyko Frontman uses the value 0x4D. Basically I found it by taking some examples of encrypted bytes I got from the guitar which don't decrypt
@@ -721,7 +726,7 @@ namespace NintrollerLib
                 #region Status Reports
                 case InputReport.Status:
                     #region Parse Status
-                    Log("Status Report: extension bit " + ((report[3] & 0x02) != 0 ? 1 : 0) + ", status type " + _statusType +
+                    LogDiagnostic("Status Report: extension bit " + ((report[3] & 0x02) != 0 ? 1 : 0) + ", status type " + _statusType +
                         ", ack " + _ackType + ", type " + _currentType + (_state == null ? " (no state yet)" : ""));
                     // core buttons can be parsed if desired
 
@@ -752,7 +757,7 @@ namespace NintrollerLib
                             if ((_statusType == StatusType.Unknown && _state == null) ||
                                 (_ackType.ToString().StartsWith("EncryptionSetup") || _ackType.ToString().StartsWith("IR_Step")))
                             {
-                                Log("Status report ignored");
+                                LogDiagnostic("Status report ignored");
                                 break;
                             }
 
@@ -879,7 +884,7 @@ namespace NintrollerLib
                                 ((long)r[3] << 16) | 
                                 ((long)r[4] <<  8) | r[5];
 
-                            Log("Extension type read: 0x" + type.ToString("X12") + (noError ? "" : " (read error " + (report[3] & 0x0F) + ")"));
+                            LogDiagnostic("Extension type read: 0x" + type.ToString("X12") + (noError ? "" : " (read error " + (report[3] & 0x0F) + ")"));
 
                             /* Right after connecting, the extension may not answer yet: the read fails (error bits set), comes back
                                as zeros (the ID of a bare Wiimote) or as all 0xFF (read as "partially inserted"). A plugged-in guitar was
@@ -892,7 +897,7 @@ namespace NintrollerLib
                             if (notReady && _extensionReported && _extensionTypeRetries < EXTENSION_TYPE_RETRIES)
                             {
                                 _extensionTypeRetries++;
-                                Log("Extension reported but not ready yet, retry " + _extensionTypeRetries);
+                                LogDiagnostic("Extension reported but not ready yet, retry " + _extensionTypeRetries);
 
                                 // Give the extension a moment; only happens while discovering, not during play
                                 Thread.Sleep(50);
@@ -919,7 +924,7 @@ namespace NintrollerLib
 
                             if (typeChange)
                             {
-                                Log("Controller type: " + newType.ToString());
+                                LogDiagnostic("Controller type: " + newType.ToString());
                                 // TODO: New: Check parsing after applying a report type (Pro is working, CC is not)
                                 InputReport applyReport = InputReport.BtnsOnly;
 
@@ -1158,7 +1163,7 @@ namespace NintrollerLib
 
                     if (report[4] == 0x03)
                     {
-                        Log("Possible Error with Operation (output report 0x" + report[3].ToString("X2") + ", while " + _ackType + ")");
+                        LogDiagnostic("Possible Error with Operation (output report 0x" + report[3].ToString("X2") + ", while " + _ackType + ")");
                         return;
                     }
 
@@ -1171,7 +1176,7 @@ namespace NintrollerLib
                     if (_ackType.IsEncryptionAck() && report[4] != 0x00)
                     {
                         _ackType = (AcknowledgementType)((int)_ackType - 1); // the current _ackType is already the step following the one that failed, so we take it back
-                        Log(_ackType.ToString() + " failed with error code " + report[4].ToString() + ". Aborting");
+                        LogDiagnostic(_ackType.ToString() + " failed with error code " + report[4].ToString() + ". Aborting");
                         _ackType = AcknowledgementType.NA;
                         break;
 
@@ -1729,7 +1734,7 @@ namespace NintrollerLib
         /// </summary>
         public void StopReading()
         {
-            Log("Reading stopped");
+            LogDiagnostic("Reading stopped");
             _reading = false;
             _readSession?.Cancel();
             _connected = false;
