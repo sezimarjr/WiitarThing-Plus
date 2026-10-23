@@ -520,6 +520,11 @@ namespace NintrollerLib
                     {
                         // Get status to make sure the wiimote is still connected
                         Log("Read timed out, are we still connected?");
+
+                        // If the type is still unknown, that status report must restart detection rather than be ignored
+                        if (_state == null)
+                            _statusType = StatusType.DiscoverExtension;
+
                         GetStatus();
                         continue;
                     }
@@ -876,15 +881,18 @@ namespace NintrollerLib
 
                             Log("Extension type read: 0x" + type.ToString("X12") + (noError ? "" : " (read error " + (report[3] & 0x0F) + ")"));
 
-                            /* Right after connecting, the extension may not answer yet: the read fails (error bits set) or comes back
-                               as zeros, and zeros are the ID of a bare Wiimote. A plugged-in guitar was then treated as a bare Wiimote
-                               until it was unplugged and plugged back in. If the status report said an extension is there, ask again.
+                            /* Right after connecting, the extension may not answer yet: the read fails (error bits set), comes back
+                               as zeros (the ID of a bare Wiimote) or as all 0xFF (read as "partially inserted"). A plugged-in guitar was
+                               then not recognized until it was unplugged and plugged back in. If the status report said an extension
+                               is there, give it a moment and ask again.
                             */
-                            if ((!noError || (ControllerType)type == ControllerType.Wiimote) &&
-                                _extensionReported && _extensionTypeRetries < EXTENSION_TYPE_RETRIES)
+                            bool notReady = !noError ||
+                                            (ControllerType)type == ControllerType.Wiimote ||
+                                            (ControllerType)type == ControllerType.PartiallyInserted;
+                            if (notReady && _extensionReported && _extensionTypeRetries < EXTENSION_TYPE_RETRIES)
                             {
                                 _extensionTypeRetries++;
-                                Log("Extension reported but its type read as " + (noError ? "none" : "an error") + ", retry " + _extensionTypeRetries);
+                                Log("Extension reported but not ready yet, retry " + _extensionTypeRetries);
 
                                 // Give the extension a moment; only happens while discovering, not during play
                                 Thread.Sleep(50);
@@ -1081,8 +1089,11 @@ namespace NintrollerLib
                                         break;
 
                                     case ControllerType.PartiallyInserted:
-                                        // try again
-                                        // TODO: New: Make sure this works
+                                        // try again. The status report this asks for has to be treated as a discovery one: the type is
+                                        // still unknown, and an Unknown status report with no state is ignored (Nyko workaround above),
+                                        // which left detection stuck here until the extension was replugged
+                                        Thread.Sleep(250);
+                                        _statusType = StatusType.DiscoverExtension;
                                         GetStatus();
                                         return;
                                         //break;
