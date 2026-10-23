@@ -1102,10 +1102,17 @@ namespace NintrollerLib
 
                                 //_state.SetCalibration(Calibrations.CalibrationPreset.Default);
 
-                                // Fire ExtensionChange event
+                                // Fire ExtensionChange event; a failing handler must not stop the reporting mode from being set below
                                 //ExtensionChange(this, _currentType);
-                                ExtensionChange(this, new NintrollerExtensionEventArgs(_currentType));
-                                
+                                try
+                                {
+                                    ExtensionChange(this, new NintrollerExtensionEventArgs(_currentType));
+                                }
+                                catch (Exception ex)
+                                {
+                                    Debug.WriteLine("Extension Change Exception: " + ex.ToString());
+                                }
+
                                 // set Report
                                 ApplyReportingType(applyReport, continuousReporting);
                             }

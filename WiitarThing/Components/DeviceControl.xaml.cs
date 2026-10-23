@@ -42,6 +42,7 @@ namespace WiitarThing
         private GuitarTiltCalibration pendingTiltCalibration;
         private System.Threading.Timer tiltSaveTimer;
         private volatile bool tiltWindowOpen = false;
+        private ControllerType lastReportedType = ControllerType.Unknown;
         
         // internally public members
         internal Holders.Holder holder;
@@ -198,6 +199,11 @@ namespace WiitarThing
                 {
                     icon.Source = (ImageSource)Application.Current.Resources[properties.lastIcon];
                 }
+                else
+                {
+                    // A saved device without a remembered icon (e.g. only its name was saved) kept the "?" icon forever
+                    UpdateIcon(device.Type);
+                }
             }
             else
             {
@@ -309,23 +315,33 @@ namespace WiitarThing
         void device_ExtensionChange(object sender, NintrollerExtensionEventArgs e)
         {
             DeviceType = e.controllerType;
+            WiitarDebug.Log($"{dName}: extension detected as {DeviceType} (connection: {state})", WiitarDebug.LogLevel.Warning);
 
-            if (holder != null)
+            try
             {
-                // Start from the defaults for the new extension, but keep the user's profile on top of them
-                var mappings = Holders.XInputHolder.GetDefaultMapping(DeviceType);
-                Profile profile = ReadProfile(properties?.profile);
-                if (profile != null)
+                if (holder != null)
                 {
-                    for (int i = 0; i < Math.Min(profile.controllerMapKeys.Count, profile.controllerMapValues.Count); i++)
+                    // Start from the defaults for the new extension, but keep the user's profile on top of them
+                    var mappings = Holders.XInputHolder.GetDefaultMapping(DeviceType);
+                    Profile profile = ReadProfile(properties?.profile);
+                    if (profile != null)
                     {
-                        mappings[profile.controllerMapKeys[i]] = profile.controllerMapValues[i];
+                        for (int i = 0; i < Math.Min(profile.controllerMapKeys.Count, profile.controllerMapValues.Count); i++)
+                        {
+                            mappings[profile.controllerMapKeys[i]] = profile.controllerMapValues[i];
+                        }
                     }
-                }
 
-                holder.ReplaceMappings(mappings);
-                holder.ClearAllValues();
-                (holder as Holders.XInputHolder)?.SetType(DeviceType);
+                    holder.ReplaceMappings(mappings);
+                    holder.ClearAllValues();
+                    (holder as Holders.XInputHolder)?.SetType(DeviceType);
+                }
+            }
+            catch (Exception ex)
+            {
+                // This runs on the input thread, where an exception would be swallowed silently and the
+                // card would never be refreshed for the new extension
+                WiitarDebug.Log($"Updating the virtual controller for {DeviceType} failed: {ex}", WiitarDebug.LogLevel.Error);
             }
 
             Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, 
@@ -345,6 +361,18 @@ namespace WiitarThing
         {
             // Makes the timer wait
             if (updateTimer != null) updateTimer.Change(1000, UPDATE_SPEED);
+
+            // Keep the card (icon, tilt button) in step with what the controller actually reports,
+            // even if an extension change notification went missing
+            if (e.controllerType != lastReportedType)
+            {
+                lastReportedType = e.controllerType;
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() =>
+                {
+                    UpdateIcon(device.Type);
+                    UpdateTiltButton();
+                }));
+            }
 
             if (holder == null)
             {
