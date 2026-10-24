@@ -136,6 +136,22 @@ namespace NintrollerLib.Tests
             }
         }
 
+        [Theory]
+        [InlineData(1.5, 0, 0)]    // sideways, along the guitar's face
+        [InlineData(0, 0, 1.5)]    // into the guitar's face
+        [InlineData(1.2, 0, 1.2)]
+        public void HardBump_LongerThanAStrum_DoesNotTrigger(double gx, double gy, double gz)
+        {
+            // Hitting furniture or a sudden body movement: much more than 1 g for longer than the flick hold time.
+            // Only the check that readings stay close to 1 g keeps this from looking like a quick tilt.
+            var sim = new AccelSimulator(30);
+            sim.Hold(2000).Bump(gx, gy, gz, 150).Hold(1000);
+
+            var run = DetectorRun.Of(NewDetector(), sim);
+
+            Assert.Equal(0, run.Presses);
+        }
+
         [Fact]
         public void SwayingToTheMusic_DoesNotTrigger()
         {

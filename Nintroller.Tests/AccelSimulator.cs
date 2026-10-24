@@ -94,6 +94,18 @@ namespace NintrollerLib.Tests
             return this;
         }
 
+        /// <summary>A jolt in a fixed direction (in g, Wiimote axes) on top of gravity, e.g. bumping the guitar sideways.</summary>
+        public AccelSimulator Bump(double gx, double gy, double gz, double ms)
+        {
+            int steps = Math.Max(1, (int)Math.Round(ms / SampleMs));
+            for (int i = 0; i < steps; i++)
+            {
+                Emit(PoseDegrees, gx, gy, gz);
+            }
+
+            return this;
+        }
+
         /// <summary>Plays with hard strums: a jolt of <paramref name="g"/> every <paramref name="everyMs"/>.</summary>
         public AccelSimulator Strumming(double g, double joltMs, double everyMs, double totalMs)
         {
