@@ -66,6 +66,15 @@ namespace NintrollerLib
         /// <summary>0 = any direction triggers; +1 / -1 = only rotations with that sign around the Wiimote's Z axis.</summary>
         public int UpDirection { get; set; }
 
+        /// <summary>
+        /// Turning faster than this (degrees/s) counts as a deliberate move; slower is treated as a posture change
+        /// that the resting pose follows.
+        /// </summary>
+        public float MinimumSpeedDegreesPerSecond { get; set; } = 45f;
+
+        /// <summary>How fast (degrees/s) the guitar is turning right now.</summary>
+        public float SpeedDegreesPerSecond { get; private set; }
+
         /// <summary>True once a resting pose has been learned.</summary>
         public bool IsReady { get; private set; }
 
@@ -135,15 +144,21 @@ namespace NintrollerLib
                 current = Blend(current, reading, Alpha(dt, SmoothingMs));
             }
 
-            bool calm = steadyMagnitude && Speed(timeMs) < CalmDegreesPerSecond;
-            if (calm)
+            double speed = Speed(timeMs);
+            SpeedDegreesPerSecond = speed == double.MaxValue ? 0 : (float)speed;
+
+            // "Still" decides when the first resting pose and the gravity level can be learned;
+            // "posture change" decides when the resting pose follows the guitar
+            bool still = steadyMagnitude && speed < CalmDegreesPerSecond;
+            bool postureChange = steadyMagnitude && speed < MinimumSpeedDegreesPerSecond;
+            if (still)
             {
                 gravity += (magnitude - gravity) * Alpha(dt, GravityFollowMs);
             }
 
             if (!IsReady)
             {
-                WarmUp(calm, dt);
+                WarmUp(still, dt);
                 return IsTriggered;
             }
 
@@ -151,7 +166,7 @@ namespace NintrollerLib
             DeviationDegrees = (float)deviation;
             RotationSign = Math.Sign(rest.X * current.Y - rest.Y * current.X);
 
-            FollowRest(calm, dt, deviation, timeMs);
+            FollowRest(postureChange, dt, deviation, timeMs);
             UpdateButton(steadyMagnitude, deviation, timeMs);
 
             return IsTriggered;

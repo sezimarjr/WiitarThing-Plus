@@ -31,6 +31,67 @@ namespace NintrollerLib.Tests
             Assert.InRange(run.PressTimes[0], flickStart, flickStart + 200 + 300);
         }
 
+        [Theory]
+        [InlineData(30, 900, 25)]   // a firm but unhurried lift: ~33 degrees/s on average
+        [InlineData(35, 1000, 25)]
+        [InlineData(20, 700, 15)]   // smaller lift with the lowest angle setting
+        public void DeliberateLift_NotABrusqueFlick_Triggers(double liftDegrees, double ms, float triggerAngle)
+        {
+            var sim = new AccelSimulator(30);
+            sim.Hold(2000).Move(30 + liftDegrees, ms).Hold(600);
+
+            var detector = NewDetector();
+            detector.TriggerAngleDegrees = triggerAngle;
+            var run = DetectorRun.Of(detector, sim);
+
+            Assert.True(run.Presses == 1, "presses: " + run.Presses + ", max deviation " + run.MaxDeviation);
+        }
+
+        [Fact]
+        public void PostureShiftOverAFewSeconds_DoesNotTrigger_EvenAtTheLowestAngle()
+        {
+            // Settling into a new posture: 30 degrees over 3 s (about 10 degrees/s)
+            var sim = new AccelSimulator(30);
+            sim.Hold(2000).Move(60, 3000).Hold(2000).Move(30, 3000).Hold(2000);
+
+            var detector = NewDetector();
+            detector.TriggerAngleDegrees = 15;
+            var run = DetectorRun.Of(detector, sim);
+
+            Assert.True(run.Presses == 0, "presses: " + run.Presses + ", max deviation " + run.MaxDeviation);
+        }
+
+        [Fact]
+        public void RequiringABrusqueMove_IgnoresADeliberateLift()
+        {
+            var sim = new AccelSimulator(30);
+            sim.Hold(2000).Move(60, 900).Hold(600);
+
+            var detector = NewDetector();
+            detector.MinimumSpeedDegreesPerSecond = 80;
+            var run = DetectorRun.Of(detector, sim);
+
+            Assert.Equal(0, run.Presses);
+        }
+
+        [Fact]
+        public void ReportsHowFastTheGuitarIsTurning()
+        {
+            var sim = new AccelSimulator(30);
+            sim.Hold(2000).Move(70, 300).Hold(300);
+
+            var detector = NewDetector();
+            float maxSpeed = 0;
+            foreach (var s in sim.Samples)
+            {
+                detector.Update(s.TimeMs, s.X, s.Y, s.Z);
+                maxSpeed = System.Math.Max(maxSpeed, detector.SpeedDegreesPerSecond);
+            }
+
+            // 40 degrees eased over 300 ms peaks at about 210 degrees/s
+            Assert.InRange(maxSpeed, 120, 260);
+        }
+
         [Fact]
         public void QuickFlick_WithGuitarFaceTilted_Triggers()
         {
