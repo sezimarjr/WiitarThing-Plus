@@ -14,4 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Nintroller\Nintroller.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="TestData\*.csv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

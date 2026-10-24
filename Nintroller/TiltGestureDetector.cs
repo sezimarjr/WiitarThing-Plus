@@ -17,16 +17,12 @@ namespace NintrollerLib
     public sealed class TiltGestureDetector
     {
         private const double GapResetMs = 250;        // longer without reports: start over (reconnect, dropout)
-        private const double SmoothingMs = 25;        // smoothing of the current direction against sensor noise
         private const double WarmupMs = 500;          // stillness needed before the first resting pose is trusted
         private const double WarmupFollowMs = 200;
-        private const double RestFollowMs = 1500;     // how quickly the resting pose follows slow posture changes
         private const double GravityFollowMs = 1000;
         // Sensor noise alone reads as ~15-20 degrees/s over short windows; a flick turns at 150+ degrees/s
         private const double SpeedWindowMs = 150;
         private const double CalmDegreesPerSecond = 45;
-        private const double MagnitudeTolerance = 0.25;
-        private const double HoldMs = 80;             // a flick must stay past the angle this long (strum jolts don't)
         private const double MaxPressMs = 300;        // the button is let go after this, so the game sees one press
         private const double AdoptAfterMs = 5000;     // staying in a new pose this long makes it the resting pose
         private const double AdoptCalmMs = 1000;
@@ -58,7 +54,7 @@ namespace NintrollerLib
         private double adoptCalmMs;
 
         /// <summary>How far (degrees) the guitar must quickly rotate from its resting pose to trigger.</summary>
-        public float TriggerAngleDegrees { get; set; } = 25f;
+        public float TriggerAngleDegrees { get; set; } = 15f;
 
         /// <summary>The guitar must come back within this many degrees of the resting pose before it can trigger again.</summary>
         public float ReleaseAngleDegrees { get; set; } = 12f;
@@ -74,6 +70,20 @@ namespace NintrollerLib
 
         /// <summary>How fast (degrees/s) the guitar is turning right now.</summary>
         public float SpeedDegreesPerSecond { get; private set; }
+
+        /// <summary>
+        /// Readings further than this (as a fraction) from 1 g are not trusted for direction: the guitar is being jolted.
+        /// </summary>
+        public double MagnitudeTolerance { get; set; } = 0.45;
+
+        /// <summary>A flick must stay past the angle this long (ms); short strum jolts don't.</summary>
+        public double HoldMs { get; set; } = 50;
+
+        /// <summary>Smoothing (ms) of the measured direction against sensor noise; longer also stretches jolts out.</summary>
+        public double SmoothingMs { get; set; } = 15;
+
+        /// <summary>How quickly (ms) the resting pose follows slow posture changes; longer lags further behind.</summary>
+        public double RestFollowMs { get; set; } = 1000;
 
         /// <summary>True once a resting pose has been learned.</summary>
         public bool IsReady { get; private set; }

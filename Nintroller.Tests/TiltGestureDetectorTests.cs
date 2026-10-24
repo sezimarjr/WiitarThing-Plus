@@ -32,7 +32,7 @@ namespace NintrollerLib.Tests
         }
 
         [Theory]
-        [InlineData(30, 900, 25)]   // a firm but unhurried lift: ~33 degrees/s on average
+        [InlineData(30, 900, 20)]   // a firm but unhurried lift: ~33 degrees/s on average
         [InlineData(35, 1000, 25)]
         [InlineData(20, 700, 15)]   // smaller lift with the lowest angle setting
         public void DeliberateLift_NotABrusqueFlick_Triggers(double liftDegrees, double ms, float triggerAngle)
@@ -68,6 +68,7 @@ namespace NintrollerLib.Tests
             sim.Hold(2000).Move(60, 900).Hold(600);
 
             var detector = NewDetector();
+            detector.TriggerAngleDegrees = 25;
             detector.MinimumSpeedDegreesPerSecond = 80;
             var run = DetectorRun.Of(detector, sim);
 

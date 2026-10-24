@@ -341,7 +341,7 @@ namespace WiitarThing
         public int tiltPressPercent = 80;
         // Automatic mode: Star Power on a quick flick from the learned playing pose, no calibration needed
         public bool tiltAutoDetect = false;
-        public int tiltGestureAngle = 25;
+        public int tiltGestureAngle = 15;
         public int tiltGestureSpeed = 45;
 
         public Property()
