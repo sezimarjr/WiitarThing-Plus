@@ -264,6 +264,7 @@ namespace WiitarThing
                     pref.tiltPressPercent = property.tiltPressPercent;
                     pref.tiltAutoDetect = property.tiltAutoDetect;
                     pref.tiltGestureAngle = property.tiltGestureAngle;
+                    pref.tiltGestureSpeed = property.tiltGestureSpeed;
 
                     return;
                 }
@@ -341,6 +342,7 @@ namespace WiitarThing
         // Automatic mode: Star Power on a quick flick from the learned playing pose, no calibration needed
         public bool tiltAutoDetect = false;
         public int tiltGestureAngle = 25;
+        public int tiltGestureSpeed = 45;
 
         public Property()
         {
@@ -376,6 +378,7 @@ namespace WiitarThing
             tiltPressPercent = copy.tiltPressPercent;
             tiltAutoDetect = copy.tiltAutoDetect;
             tiltGestureAngle = copy.tiltGestureAngle;
+            tiltGestureSpeed = copy.tiltGestureSpeed;
         }
     }
 

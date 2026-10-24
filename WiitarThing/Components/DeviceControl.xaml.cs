@@ -1054,6 +1054,7 @@ namespace WiitarThing
         private bool UpdateTiltGesture(Accelerometer accelerometer)
         {
             tiltGesture.TriggerAngleDegrees = Math.Max(10, Math.Min(60, properties.tiltGestureAngle));
+            tiltGesture.MinimumSpeedDegreesPerSecond = Math.Max(10, Math.Min(120, properties.tiltGestureSpeed));
 
             return tiltGesture.Update(
                 SessionMonitor.NowMs,
@@ -1133,6 +1134,7 @@ namespace WiitarThing
                 properties.tiltPressPercent = win.PressPercent;
                 properties.tiltAutoDetect = win.AutoDetect;
                 properties.tiltGestureAngle = win.GestureAngle;
+                properties.tiltGestureSpeed = win.GestureSpeed;
                 StoreTiltCalibration(win.Calibration);
             }
             else if (win.HasInitialCalibration)
