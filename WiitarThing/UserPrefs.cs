@@ -262,6 +262,8 @@ namespace WiitarThing
                     pref.tiltCalibration = property.tiltCalibration;
                     pref.tiltPressesSelect = property.tiltPressesSelect;
                     pref.tiltPressPercent = property.tiltPressPercent;
+                    pref.tiltAutoDetect = property.tiltAutoDetect;
+                    pref.tiltGestureAngle = property.tiltGestureAngle;
 
                     return;
                 }
@@ -336,6 +338,9 @@ namespace WiitarThing
         public NintrollerLib.GuitarTiltCalibration tiltCalibration;
         public bool tiltPressesSelect = true;
         public int tiltPressPercent = 80;
+        // Automatic mode: Star Power on a quick flick from the learned playing pose, no calibration needed
+        public bool tiltAutoDetect = false;
+        public int tiltGestureAngle = 25;
 
         public Property()
         {
@@ -369,6 +374,8 @@ namespace WiitarThing
             tiltCalibration = copy.tiltCalibration;
             tiltPressesSelect = copy.tiltPressesSelect;
             tiltPressPercent = copy.tiltPressPercent;
+            tiltAutoDetect = copy.tiltAutoDetect;
+            tiltGestureAngle = copy.tiltGestureAngle;
         }
     }
 

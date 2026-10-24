@@ -155,7 +155,7 @@
                 <TextBlock x:Name="warningText" TextWrapping="Wrap" Foreground="#FF9A4210"
                            Text="As duas posições estão muito perto: o balanço normal da música pode soltar o especial sem querer."/>
             </Border>
-            <TextBlock x:Name="rangeText" Margin="2,10,0,0" FontSize="12" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+            <TextBlock x:Name="rangeText" Margin="2,10,0,0" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
 
             <!-- Tilt as the Star Power button -->
             <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="12,10">
@@ -165,13 +165,38 @@
                         Inclinar aperta o botão de especial (Select / −)
                     </CheckBox>
                     <TextBlock TextWrapping="Wrap" FontSize="11" Margin="20,4,0,0" Foreground="{DynamicResource BrushJohnTheRevelator}"
-                               Text="Ao passar da marca e ficar lá por 0,1 s, o WiitarThing aperta o mesmo botão que o − da guitarra (botão 7 / Back). Esse pequeno tempo ignora os trancos das palhetadas. Funciona em jogos que não reconhecem a inclinação, como o Clone Hero."/>
-                    <StackPanel Orientation="Horizontal" Margin="20,10,0,0">
-                        <TextBlock Text="Soltar o especial a partir de" VerticalAlignment="Center" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
-                        <Slider x:Name="pressPercentSlider" Width="170" Minimum="50" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
-                                TickPlacement="BottomRight" Margin="10,0" VerticalAlignment="Center" ValueChanged="pressPercentSlider_ValueChanged"/>
-                        <TextBlock x:Name="pressPercentText" Text="80%" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                               Text="Quando detecta o especial, o WiitarThing aperta o mesmo botão que o − da guitarra (botão 7 / Back). Funciona em jogos que não reconhecem a inclinação, como o Clone Hero."/>
+
+                    <RadioButton x:Name="autoModeRadio" GroupName="tiltMode" Margin="20,12,0,0" FontWeight="Bold" VerticalContentAlignment="Center"
+                                 Foreground="{DynamicResource BrushJohnTheRevelator}" Checked="mode_Changed">
+                        Automático: detecta o movimento rápido (sem calibrar)
+                    </RadioButton>
+                    <StackPanel x:Name="autoSettings">
+                        <TextBlock TextWrapping="Wrap" FontSize="11" Margin="40,2,0,0" Foreground="{DynamicResource BrushJohnTheRevelator}"
+                                   Text="Aprende sozinho a posição em que você toca e solta o especial quando a guitarra gira rápido a partir dela. Mudar de postura devagar, balançar e palhetar forte não disparam."/>
+                        <StackPanel Orientation="Horizontal" Margin="40,6,0,0">
+                            <TextBlock Text="Movimento de pelo menos" VerticalAlignment="Center" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                            <Slider x:Name="gestureAngleSlider" Width="150" Minimum="15" Maximum="45" TickFrequency="5" IsSnapToTickEnabled="True"
+                                    TickPlacement="BottomRight" Margin="10,0" VerticalAlignment="Center" ValueChanged="gestureAngleSlider_ValueChanged"/>
+                            <TextBlock x:Name="gestureAngleText" Text="25°" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <RadioButton x:Name="calibratedModeRadio" GroupName="tiltMode" Margin="20,12,0,0" FontWeight="Bold" VerticalContentAlignment="Center"
+                                 Foreground="{DynamicResource BrushJohnTheRevelator}" Checked="mode_Changed">
+                        Calibrado: usa as posições 1 e 2
+                    </RadioButton>
+                    <StackPanel x:Name="calibratedSettings">
+                        <TextBlock TextWrapping="Wrap" FontSize="11" Margin="40,2,0,0" Foreground="{DynamicResource BrushJohnTheRevelator}"
+                                   Text="Aperta ao passar da marca e ficar lá por 0,1 s (ignora os trancos das palhetadas)."/>
+                        <StackPanel Orientation="Horizontal" Margin="40,6,0,0">
+                            <TextBlock Text="Soltar o especial a partir de" VerticalAlignment="Center" Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                            <Slider x:Name="pressPercentSlider" Width="150" Minimum="50" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
+                                    TickPlacement="BottomRight" Margin="10,0" VerticalAlignment="Center" ValueChanged="pressPercentSlider_ValueChanged"/>
+                            <TextBlock x:Name="pressPercentText" Text="80%" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource BrushJohnTheRevelator}"/>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>

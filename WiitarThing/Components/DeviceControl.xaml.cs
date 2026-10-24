@@ -44,6 +44,7 @@ namespace WiitarThing
         private volatile bool tiltWindowOpen = false;
         private bool tiltStarPowerHeld = false;
         private int? tiltAboveSince;
+        private readonly TiltGestureDetector tiltGesture = new TiltGestureDetector();
         private ControllerType lastReportedType = ControllerType.Unknown;
         private SessionMonitor.DeviceStats monitorStats;
 
@@ -244,6 +245,7 @@ namespace WiitarThing
             device?.StopReading();
             holder?.Close();
             monitorStats?.Reset();
+            tiltGesture.Reset();
             lowBatteryFired = false;
             lowBatteryShown = false;
             ConnectionState = DeviceState.Discovered;
@@ -333,6 +335,7 @@ namespace WiitarThing
         void device_ExtensionChange(object sender, NintrollerExtensionEventArgs e)
         {
             DeviceType = e.controllerType;
+            tiltGesture.Reset();
             WiitarDebug.Log($"{dName}: extension detected as {DeviceType} (connection: {state})", WiitarDebug.LogLevel.Warning);
             SessionMonitor.Event(dName, "extensão detectada: " + DeviceType);
 
@@ -585,7 +588,14 @@ namespace WiitarThing
 
                     // Tilting past the Star Power point also presses Select, the button games use for Star Power,
                     // so it works even where a game doesn't pick up the tilt axis
-                    bool tiltSelect = properties != null && properties.tiltPressesSelect && UpdateTiltStarPower(gtr.TiltHigh);
+                    bool tiltSelect = false;
+                    if (properties != null && properties.tiltPressesSelect)
+                    {
+                        tiltSelect = properties.tiltAutoDetect
+                            ? UpdateTiltGesture(gtr.wiimote.accelerometer)
+                            : UpdateTiltStarPower(gtr.TiltHigh);
+                    }
+
                     holder.SetValue(Guitar.InputNames.SELECT, gtr.Select || tiltSelect);
 
                     if (gtr.TiltCalibrating)
@@ -1037,6 +1047,21 @@ namespace WiitarThing
             return tiltStarPowerHeld;
         }
 
+        // Automatic mode: a quick flick away from the playing pose the detector learned on its own.
+        // The accelerometer's zero point is about 127 counts on every axis.
+        private const int AccelerometerZero = 127;
+
+        private bool UpdateTiltGesture(Accelerometer accelerometer)
+        {
+            tiltGesture.TriggerAngleDegrees = Math.Max(10, Math.Min(60, properties.tiltGestureAngle));
+
+            return tiltGesture.Update(
+                SessionMonitor.NowMs,
+                accelerometer.rawX - AccelerometerZero,
+                accelerometer.rawY - AccelerometerZero,
+                accelerometer.rawZ - AccelerometerZero);
+        }
+
         // Called on the input thread while the Wiimote's 1 or 2 button is held. Saves once the
         // buttons have been released for a second, so holding them doesn't save on every report.
         private void TrackTiltCalibration(Guitar gtr)
@@ -1097,7 +1122,7 @@ namespace WiitarThing
             tiltWindowOpen = true;
             tiltSaveTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
-            var win = new Windows.TiltCalibrationWindow(device, dName, properties.tiltPressesSelect, properties.tiltPressPercent) { Owner = Window.GetWindow(this) };
+            var win = new Windows.TiltCalibrationWindow(device, dName, properties) { Owner = Window.GetWindow(this) };
             bool keep = win.ShowDialog() == true;
 
             tiltWindowOpen = false;
@@ -1106,6 +1131,8 @@ namespace WiitarThing
             {
                 properties.tiltPressesSelect = win.TiltPressesSelect;
                 properties.tiltPressPercent = win.PressPercent;
+                properties.tiltAutoDetect = win.AutoDetect;
+                properties.tiltGestureAngle = win.GestureAngle;
                 StoreTiltCalibration(win.Calibration);
             }
             else if (win.HasInitialCalibration)
