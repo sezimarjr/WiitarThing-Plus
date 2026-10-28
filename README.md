@@ -25,6 +25,7 @@ A program that lets you connect Wii Guitar Hero instruments to a Windows PC wire
   - ["My wiimote doesn't sync!"](#my-wiimote-doesnt-sync)
   - ["My guitar is moving my mouse around!"](#my-guitar-is-moving-my-mouse-around)
   - ["A fret sometimes doesn't register"](#a-fret-sometimes-doesnt-register)
+- [FAQ](#faq)
 - [For Further Assistance](#for-further-assistance)
 - [Other Setup](#other-setup)
   - [Using a Dolphinbar](#using-a-dolphinbar)
@@ -210,6 +211,43 @@ Alternatively, you can instead remove the right stick mapping inside of the Desk
 ### "A fret sometimes doesn't register"
 
 Run a session with `MONITORAR_SESSAO.bat` and check `RESUMO_MONITOR.bat`. If frets "drop out while held" but Bluetooth timing is fine, the problem is in the guitar: clean the fret contacts and, on the Les Paul, the neck connector pins, with isopropyl alcohol. If several frets fail, suspect the neck connector, since all frets go through it.
+
+## FAQ
+
+### How do I use a Wii Guitar Hero guitar on PC?
+
+You need an original Wiimote, a Bluetooth adapter, [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases) and WiitarThing-Plus. Plug the guitar into the Wiimote, sync and connect the Wiimote in WiitarThing-Plus, and Windows sees the guitar as an Xbox 360 controller. See [Setup](#setup).
+
+### Does it work with Clone Hero and YARG?
+
+Yes. Both games see the guitar as an Xbox 360 controller. Bind the frets, strum, whammy and Star Power once in the game's controller settings.
+
+### How do I activate Star Power by tilting the guitar in Clone Hero?
+
+Clone Hero often doesn't react to the tilt of a Wii guitar. WiitarThing-Plus presses Select (Xbox Back) when you tilt, so bind Star Power to that button in Clone Hero. You can also use the automatic mode, which fires Star Power on a quick flick of the guitar. See [Star Power (Tilt)](#star-power-tilt).
+
+### Which instruments work?
+
+Every Wii Guitar Hero instrument that plugs into a Wiimote: the Les Paul (Guitar Hero III), the World Tour and Guitar Hero 5 / Warriors of Rock guitars, the drum kit and the DJ Hero turntable. Rock Band Wii instruments use their own USB dongle instead of a Wiimote, so they don't need WiitarThing-Plus.
+
+### How is it different from the original WiitarThing?
+
+It is based on WiitarThing 2.7.0.6 and adds:
+- crash and connection fixes;
+- guitars recognized on the first try;
+- Star Power by tilting in games that ignore the tilt axis;
+- an automatic Star Power mode;
+- diagnostic tools for Bluetooth and fret problems.
+
+See [What's New](#whats-new-in-wiitarthing-plus).
+
+### Do I need a special Bluetooth adapter?
+
+Most adapters work, but some cheap ones don't handle Wiimotes well. Third-party (non-Nintendo) Wiimotes almost never connect to a PC. If notes drop or the guitar disconnects, run `MONITORAR_SESSAO.bat` to tell a Bluetooth problem from a worn guitar contact.
+
+### Does it work on Windows 11, Mac or Linux?
+
+It works on Windows 10 and 11. Mac and Linux are not supported.
 
 ## For Further Assistance
 

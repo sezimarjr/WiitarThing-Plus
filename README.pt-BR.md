@@ -121,6 +121,26 @@ Depois de sincronizado, basta ligar o Wiimote e clicar em Connect. Wiimotes para
 - **A guitarra mexe o mouse:** é a configuração de controle do Steam. Desative o suporte a controle de Xbox nas configurações de controle do Steam.
 - **Um traste às vezes não funciona:** rode uma sessão com o `MONITORAR_SESSAO.bat` e veja o `RESUMO_MONITOR.bat`. Se os trastes falham enquanto você segura e o Bluetooth está bom, o problema está na guitarra: limpe os contatos dos trastes e, na Les Paul, os pinos do encaixe do braço, com álcool isopropílico.
 
+## Perguntas frequentes
+
+**Como usar a guitarra de Guitar Hero do Wii no PC?**
+Você precisa de um Wiimote original, um adaptador Bluetooth, o [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases) e o WiitarThing-Plus. Encaixe a guitarra no Wiimote, sincronize e conecte o Wiimote no WiitarThing-Plus, e o Windows passa a ver a guitarra como um controle de Xbox 360.
+
+**Funciona no Clone Hero e no YARG?**
+Sim. Os dois veem a guitarra como controle de Xbox 360. Configure os trastes, a palheta, o whammy e o especial uma vez nas configurações de controle do jogo.
+
+**Como soltar o especial inclinando a guitarra no Clone Hero?**
+O Clone Hero muitas vezes não reconhece a inclinação da guitarra do Wii. O WiitarThing-Plus aperta o Select (Back do Xbox) quando você inclina, então basta configurar o especial nesse botão. Também dá para usar o modo automático, que solta o especial com um movimento rápido da guitarra.
+
+**Quais instrumentos funcionam?**
+Todos os instrumentos de Guitar Hero do Wii que encaixam no Wiimote: a Les Paul (Guitar Hero III), as guitarras do World Tour e do Guitar Hero 5 / Warriors of Rock, a bateria e o toca-discos do DJ Hero.
+
+**Qual a diferença para o WiitarThing original?**
+Correções de travamentos e de conexão, guitarra reconhecida de primeira, especial pela inclinação em jogos que ignoram o eixo, modo automático do especial e ferramentas de diagnóstico.
+
+**Funciona no Windows 11, Mac ou Linux?**
+Funciona no Windows 10 e 11. Mac e Linux não são suportados.
+
 Mais detalhes no [README em inglês](README.md).
 
 ## Créditos
