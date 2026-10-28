@@ -6,6 +6,8 @@ O **WiitarThing-Plus** é uma versão melhorada do [WiitarThing](https://github.
 
 🇺🇸 [Read in English](README.md) · 📋 [Lista completa de mudanças](CHANGELOG.md) (em inglês)
 
+![Janela principal do WiitarThing-Plus](docs/images/main-window.png)
+
 ## O que há de novo
 
 **Estabilidade e conexão**
@@ -32,14 +34,30 @@ O **WiitarThing-Plus** é uma versão melhorada do [WiitarThing](https://github.
 
 ## Especial (inclinação)
 
+![Guitarra conectada com o botão ★](docs/images/device-card.png)
+
 Clique no **★** da guitarra conectada. A tela mostra a guitarra girando ao vivo e um medidor de especial, e você escolhe como o especial dispara:
 
 - **Automático:** o WiitarThing-Plus aprende sozinho a posição em que você toca (mesmo com a guitarra na diagonal) e solta o especial quando a guitarra faz um movimento rápido de uns 15° ou mais. Mudar de postura devagar, balançar o corpo e palhetar forte não disparam. Dá para ajustar o ângulo e a rapidez mínima, ver o tamanho e a velocidade do seu último movimento e gravar 10 segundos de movimento para ajudar no ajuste.
 - **Calibrado:** marque a posição de jogo (botão 1) e a posição do especial (botão 2) e escolha até onde inclinar (padrão: 80%). A inclinação precisa ficar além do ponto por 0,1 s, o que ignora os trancos das palhetadas.
 
+![Tela da inclinação no modo automático, especial detectado](docs/images/tilt-automatic.png)
+
+*Modo automático: a guitarra na tela gira junto com a de verdade e brilha em azul quando o especial é detectado.*
+
+![Tela da inclinação no modo calibrado](docs/images/tilt-calibrated.png)
+
+*Modo calibrado: posições de jogo e do especial marcadas, e o ponto em que o Select é apertado (80%).*
+
 Nos dois modos o WiitarThing-Plus aperta o **Select** (o *Back* do Xbox, botão 7), que já funciona no Clone Hero sem configurar o eixo de inclinação. O eixo (analógico direito) continua sendo enviado.
 
-O detector automático foi ajustado com gravações reais de uma Les Paul jogando Clone Hero e é coberto por testes automáticos.
+O detector automático foi ajustado com gravações reais de uma Les Paul jogando Clone Hero (21 tentativas de especial, com palhetadas entre elas) e é coberto por testes automáticos: movimentos simulados (palhetadas, pancadas, balanço, mudanças de postura) e essas gravações.
+
+| Modo automático | Antes do ajuste | Depois do ajuste |
+| --- | --- | --- |
+| Tentativas reais detectadas | 6 de 21 | **19 de 21** |
+| Disparos falsos (palhetadas, pancadas, balanço e postura simulados) | 0 | **0** |
+| Disparos durante palhetadas reais | não medido | **0** |
 
 ## Ferramentas de teste
 
@@ -50,6 +68,25 @@ Junto com o `WiitarThing.exe` vêm:
 | `TESTAR_CONTROLE.bat` | Mostra ao vivo o que a guitarra envia: trastes, palheta, Select/Start e as barras de whammy e inclinação. |
 | `MONITORAR_SESSAO.bat` | Liga o monitor de sessão (até com o programa já aberto): tempo dos pacotes Bluetooth, quedas, trastes que falham enquanto você segura (mau contato) e falhas de leitura, salvos na pasta `monitor`. |
 | `RESUMO_MONITOR.bat` | Resume a última sessão monitorada, com a conclusão para o Bluetooth e para cada traste. |
+
+Exemplo real do `RESUMO_MONITOR.bat` (sessão de 12 minutos):
+
+```
+Bluetooth
+  Pacotes por segundo (media):      97
+  Maior tempo sem dados:            55 ms
+  Quedas de conexao:                0
+  => BOM: sinal estavel durante a sessao
+
+Trastes e palheta
+  Trastes apertados:                1957
+  Soltaram sozinhos e voltaram:     66
+    traste amarelo   soltou sozinho 23 vez(es)
+    traste azul      soltou sozinho 18 vez(es)
+  => MAU CONTATO provavel nos trastes listados acima
+```
+
+Essa sessão mostrou que o Bluetooth estava bom e apontou mau contato no encaixe do braço da Les Paul, que melhorou com a limpeza.
 
 ## Sobre esta versão
 

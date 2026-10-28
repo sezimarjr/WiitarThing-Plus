@@ -127,6 +127,12 @@ namespace WiitarThing.Windows
             pressPercentSlider.Value = PressPercent;
             gestureAngleSlider.Value = GestureAngle;
             gestureSpeedSlider.Value = GestureSpeed;
+
+            // Setting a slider to the value it already has (e.g. its minimum) raises no ValueChanged,
+            // so write the labels here instead of leaving the placeholders from the layout
+            pressPercentText.Text = PressPercent + "%";
+            gestureAngleText.Text = GestureAngle + "°";
+            gestureSpeedText.Text = GestureSpeed + "°/s";
             (AutoDetect ? autoModeRadio : calibratedModeRadio).IsChecked = true;
             UpdateModeControls();
             UpdatePointLabel();

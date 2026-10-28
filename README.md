@@ -6,6 +6,8 @@ A program that lets you connect Wii Guitar Hero instruments to a Windows PC wire
 
 🇧🇷 [Leia em português](README.pt-BR.md) · 📋 [Full list of changes](CHANGELOG.md)
 
+![WiitarThing-Plus main window](docs/images/main-window.png)
+
 ## Table of Contents
 
 - [What's New in WiitarThing-Plus](#whats-new-in-wiitarthing-plus)
@@ -56,14 +58,30 @@ A program that lets you connect Wii Guitar Hero instruments to a Windows PC wire
 
 ## Star Power (Tilt)
 
+![Connected guitar with the ★ tilt button](docs/images/device-card.png)
+
 Click the **★** button on a connected guitar to open the tilt window. It shows the guitar turning live, a Star Power meter, and lets you choose how Star Power is triggered:
 
 - **Automatic:** WiitarThing-Plus learns your playing pose on its own (even if you play with the guitar diagonal) and triggers Star Power on a quick flick of the guitar, about 15° or more. Slowly changing posture, swaying and strumming hard don't trigger it. You can adjust the angle and minimum speed, see the size and speed of your last move, and record 10 seconds of movement to help tuning.
 - **Calibrated:** mark your playing pose (button 1) and your Star Power pose (button 2), then choose how far you have to tilt (default 80%). The tilt must stay past that point for 0.1 s, which ignores strum jolts.
 
+![Tilt window, automatic mode: Star Power detected](docs/images/tilt-automatic.png)
+
+*Automatic mode: the guitar picture turns with the real one and glows blue when Star Power is detected.*
+
+![Tilt window, calibrated mode](docs/images/tilt-calibrated.png)
+
+*Calibrated mode: playing and Star Power poses marked, and the point where Select is pressed (80%).*
+
 Either way, WiitarThing-Plus presses **Select** (Xbox *Back*, button 7) for Star Power, which works in Clone Hero without binding the tilt axis. The tilt axis (right stick) is still sent too.
 
-The automatic detector was tuned on real recordings of a Les Paul played in Clone Hero and is covered by automated tests (simulated movements plus those recordings).
+The automatic detector was tuned on real recordings of a Les Paul played in Clone Hero (21 Star Power flicks with strumming in between) and is covered by automated tests: simulated movements (strumming, bumps, swaying, posture changes) plus those recordings.
+
+| Automatic mode | Before tuning | After tuning |
+| --- | --- | --- |
+| Real flicks detected | 6 of 21 | **19 of 21** |
+| False triggers (simulated strumming, bumps, swaying, posture) | 0 | **0** |
+| Presses during real strumming | not measured | **0** |
 
 ## Testing and Diagnostic Tools
 
@@ -76,6 +94,43 @@ The release includes helper scripts next to `WiitarThing.exe`:
 | `RESUMO_MONITOR.bat` | Summarizes the last monitored session, with a verdict for Bluetooth and for each fret. |
 
 You can also start WiitarThing-Plus with `WiitarThing.exe --monitor`.
+
+What `TESTAR_CONTROLE.bat` shows (illustrative values):
+
+```
+Controle 1   (Esc para sair)
+
+Trastes:   verde   VERMELHO   amarelo   azul   laranja
+Palheta:  PARA BAIXO
+Select (-): -           Start (+): -
+
+Whammy (alavanca):       [###########...................]  37%
+Inclinacao (Star Power): [##############################] 100%
+>> inclinada o suficiente para a maioria dos jogos soltarem o especial
+```
+
+Example from `RESUMO_MONITOR.bat` (a real 12-minute session):
+
+```
+=== Guitar  (11 min 50 s monitorados) ===
+
+Bluetooth
+  Pacotes por segundo (media):      97
+  Intervalo medio entre pacotes:    10,4 ms
+  Maior tempo sem dados:            55 ms
+  Travadas (mais de 200 ms):        0
+  Quedas de conexao:                0
+  => BOM: sinal estavel durante a sessao
+
+Trastes e palheta
+  Trastes apertados:                1957
+  Soltaram sozinhos e voltaram:     66
+    traste amarelo   soltou sozinho 23 vez(es)
+    traste azul      soltou sozinho 18 vez(es)
+  => MAU CONTATO provavel nos trastes listados acima
+```
+
+That session showed Bluetooth was fine and pointed to worn contacts on the Les Paul's neck connector, which cleaning improved.
 
 ## About This Version
 
