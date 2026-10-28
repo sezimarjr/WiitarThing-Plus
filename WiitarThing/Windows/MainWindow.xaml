@@ -8,7 +8,7 @@
         <Grid.Resources>
             <local:ShowWindowCommand x:Key="ShowWindow" />
         </Grid.Resources>
-        <Label Content="Credits: Justin Keys - WiinUSoft, Meowmaritus - Guitar support, shockdude - Turntable support,&#xA;MWisBest - ViGEm support, Aida Enna - Maintenance (2020-2023), TheNathannator - Maintenance (2023-now)" HorizontalAlignment="Left" VerticalAlignment="Bottom" Padding="0" FontSize="11" Margin="8,0,0,0" Width="600" Height="32"/>
+        <Label Content="Credits: Justin Keys - WiinUSoft, Meowmaritus - Guitar, shockdude - Turntable, MWisBest - ViGEm,&#xA;Aida Enna - Maint. (2020-2023), TheNathannator - Maint. (2023-now), Sezimar Jr - WiitarThing-Plus" HorizontalAlignment="Left" VerticalAlignment="Bottom" Padding="0" FontSize="11" Margin="8,0,0,0" Width="600" Height="32"/>
         <tb:TaskbarIcon x:Name="trayIcon" 
                         IconSource="/WiitarThing;component/GHWT_Wii_Guitar.ico"
                         ToolTipText="WiitarThing" 
@@ -79,6 +79,7 @@
                     <MenuItem x:Name="menu_SetDefaultCalibration" Visibility="Collapsed"
                Header="Set Default Calibration" Click="menu_SetDefaultCalibration_Click"/>
                     <MenuItem x:Name="menu_Repo" Header="Open Github Repo" Click="menu_Github_Click"/>
+                    <MenuItem x:Name="menu_Credits" Header="Credits" Click="menu_Credits_Click"/>
                     <MenuItem x:Name="menu_version" Header="version 2.0" IsEnabled="False"/>
                 </ContextMenu>
             </Button.ContextMenu>

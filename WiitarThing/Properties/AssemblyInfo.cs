@@ -5,12 +5,12 @@ using System.Windows;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("WiitarThing")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("WiitarThing-Plus")]
+[assembly: AssemblyDescription("Wii guitars, drums and turntables on PC as Xbox 360 controllers. Based on WiitarThing.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WiitarThing")]
-[assembly: AssemblyCopyright("Copyright © 2020")]
+[assembly: AssemblyProduct("WiitarThing-Plus")]
+[assembly: AssemblyCopyright("Copyright © 2018 Meowmaritus; WiitarThing-Plus changes © 2026 Sezimar Jr. MIT License.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,5 +51,5 @@ using System.Windows;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("2.7.0.6")]
 [assembly: AssemblyFileVersion("2.7.0.6")]
-// Shown in the title bar and About menu so this custom build isn't mistaken for the official release
-[assembly: AssemblyInformationalVersion("2.7.0.6-nossa")]
+// WiitarThing-Plus's own version, shown in the title bar and version menu; AssemblyVersion stays the WiitarThing version it is based on
+[assembly: AssemblyInformationalVersion("1.0.0")]

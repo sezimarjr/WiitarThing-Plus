@@ -47,6 +47,9 @@ namespace WiitarThing
         public static MainWindow Instance { get; private set; }
 
         // The informational version carries the build tag (e.g. "2.7.0.6-nossa"); fall back to the plain version
+        // The WiitarThing release this build is based on
+        private static string BaseVersion => System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString();
+
         private static string DisplayVersion
         {
             get
@@ -102,7 +105,7 @@ namespace WiitarThing
             Instance = this;
 
 
-            Title = "WiitarThing v" + DisplayVersion;
+            Title = "WiitarThing-Plus v" + DisplayVersion + "  (based on WiitarThing " + BaseVersion + ")";
 
 #if DEBUG
             Title += " Debug Build";
@@ -357,7 +360,7 @@ namespace WiitarThing
         {
             try
             {
-                menu_version.Header = "Version " + DisplayVersion;
+                menu_version.Header = "WiitarThing-Plus " + DisplayVersion + " (WiitarThing " + BaseVersion + ")";
             }
             catch { }
 
@@ -598,9 +601,33 @@ namespace WiitarThing
             UserPrefs.SavePrefs();
         }
 
+        // Where this build lives; the WiitarThing it is based on is credited in the Credits window and README
+        internal const string ProjectRepoUrl = "https://github.com/OWNER/WiitarThing-Plus";
+        internal const string UpstreamRepoUrl = "https://github.com/TheNathannator/WiitarThing";
+
         private void menu_Github_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("https://github.com/TheNathannator/WiitarThing");
+            Process.Start(ProjectRepoUrl);
+        }
+
+        private void menu_Credits_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(
+                "WiitarThing-Plus\n" +
+                "by Sezimar Jr, full-stack developer.\n" +
+                "Built with AI assistance (Claude Code) to understand the codebase, find bugs, and implement and test the improvements.\n\n" +
+                "Based on WiitarThing, thanks to:\n" +
+                "  • Justin Keys (KeyPuncher): WiinUSoft / WiinUPro, Wiimote connection and most of the UI\n" +
+                "  • Meowmaritus (Myst): the original WiitarThing and guitar support\n" +
+                "  • shockdude: turntable support\n" +
+                "  • MWisBest: ViGEmBus support\n" +
+                "  • Aida Enna: maintenance and releases (2020-2023)\n" +
+                "  • TheNathannator: maintenance (2023-now)\n" +
+                "  • and everyone who contributed to the original projects.\n\n" +
+                "Released under the MIT License.\n" +
+                ProjectRepoUrl + "\n" +
+                "Original: " + UpstreamRepoUrl,
+                "Credits", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         #region Shortcut Creation
