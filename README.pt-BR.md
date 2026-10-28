@@ -60,7 +60,7 @@ Todo o trabalho dos autores originais foi mantido e está creditado abaixo. O Wi
 ## Instalação
 
 1. Baixe e instale o [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
-2. Baixe o WiitarThing-Plus na aba ["Releases"](https://github.com/OWNER/WiitarThing-Plus/releases) e extraia numa pasta nova.
+2. Baixe o WiitarThing-Plus na aba ["Releases"](https://github.com/sezimarjr/WiitarThing-Plus/releases) e extraia numa pasta nova.
 3. Precisa do .NET Framework 4.8, que já vem no Windows 10 e 11.
 
 ### Conectar o Wiimote
@@ -88,7 +88,7 @@ Mais detalhes no [README em inglês](README.md).
 
 ## Créditos
 
-**WiitarThing-Plus**: [Sezimar Jr](https://github.com/OWNER), desenvolvedor full stack, com apoio de IA ([Claude Code](https://claude.com/claude-code)).
+**WiitarThing-Plus**: [Sezimar Jr](https://github.com/sezimarjr), desenvolvedor full stack, com apoio de IA ([Claude Code](https://claude.com/claude-code)).
 
 Baseado no WiitarThing, mantendo o trabalho de todos os seus autores:
 

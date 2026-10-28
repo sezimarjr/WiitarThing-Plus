@@ -602,7 +602,7 @@ namespace WiitarThing
         }
 
         // Where this build lives; the WiitarThing it is based on is credited in the Credits window and README
-        internal const string ProjectRepoUrl = "https://github.com/OWNER/WiitarThing-Plus";
+        internal const string ProjectRepoUrl = "https://github.com/sezimarjr/WiitarThing-Plus";
         internal const string UpstreamRepoUrl = "https://github.com/TheNathannator/WiitarThing";
 
         private void menu_Github_Click(object sender, RoutedEventArgs e)

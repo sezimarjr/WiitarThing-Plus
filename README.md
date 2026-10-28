@@ -88,7 +88,7 @@ All the work of the original authors is kept and credited below. WiitarThing-Plu
 ### Install WiitarThing-Plus
 
 1. Download and install [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
-2. Download WiitarThing-Plus from [the "Releases" tab](https://github.com/OWNER/WiitarThing-Plus/releases), and extract it into a new folder.
+2. Download WiitarThing-Plus from [the "Releases" tab](https://github.com/sezimarjr/WiitarThing-Plus/releases), and extract it into a new folder.
 3. Requires .NET Framework 4.8 (already included in Windows 10 and 11).
 
 #### A Note About Older Versions
@@ -185,7 +185,7 @@ The program is built to `WiitarThing/bin/Release/net48/`.
 
 ## Credits
 
-**WiitarThing-Plus** is by [Sezimar Jr](https://github.com/OWNER), full-stack developer, built with AI assistance ([Claude Code](https://claude.com/claude-code)).
+**WiitarThing-Plus** is by [Sezimar Jr](https://github.com/sezimarjr), full-stack developer, built with AI assistance ([Claude Code](https://claude.com/claude-code)).
 
 It is based on WiitarThing and keeps all of its authors' work:
 
